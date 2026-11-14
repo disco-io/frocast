@@ -47,10 +47,16 @@ function banner(kind, html) {
 
 // ---------- data ----------
 async function load() {
-  const r = await call(`/api/toppings?${qs()}`);
+  const [r, guide, tot, sugg] = await Promise.all([
+    call(`/api/toppings?${qs()}`),
+    call(`/api/toppings?${qs()}&guidance=1`),
+    call(`/api/toppings?${qs()}&totals=1&days=7`),
+    call(`/api/toppings?${qs()}&suggestions=1`)
+  ]);
   if (r.status === 401) { location.href = `/pair.html?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
   if (!r.ok) return;
   S.data = r.data;
+  S.extra = { guidance: guide.ok ? guide.data : null, totals: tot.ok ? tot.data : null, suggestions: sugg.ok ? sugg.data.suggestions : [] };
   S.owner = !!r.data.owner;
   for (const kind of ["open", "close"]) {
     const c = r.data.checks[kind];
@@ -140,6 +146,79 @@ function showResult(kind, res) {
   render();
 }
 
+// ---------- step 3: live camera with this morning's photo as an overlay ----------
+const overlaySrc = () => {
+  const id = S.data?.checks.open?.photoId;
+  return id ? `/api/toppings?photo=${encodeURIComponent(id)}` : (demo ? DEMO_PHOTOS.open : null);
+};
+let camStream = null;
+
+async function takePhoto() {
+  const live = S.tab === "close" && !S.noLiveCam && overlaySrc() && window.isSecureContext && navigator.mediaDevices?.getUserMedia;
+  if (!live) return $("photoInput").click();
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false });
+  } catch {
+    // No camera permission or no camera: fall back to the plain photo picker (needs a fresh tap on iPhone).
+    S.noLiveCam = true;
+    return banner("", esc(t("top.camNoLive")));
+  }
+  $("camVideo").srcObject = camStream;
+  $("camOverlay").src = overlaySrc();
+  $("camOverlay").classList.toggle("hidden", !$("camOverlayOn").checked);
+  $("camSheet").classList.remove("hidden");
+  $("camShot").focus();
+}
+
+function stopCamera() {
+  camStream?.getTracks().forEach(tr => tr.stop());
+  camStream = null;
+  $("camVideo").srcObject = null;
+  $("camSheet").classList.add("hidden");
+}
+
+async function shootCamera() {
+  const v = $("camVideo");
+  if (!v.videoWidth) return;
+  const k = Math.min(1, 1600 / Math.max(v.videoWidth, v.videoHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.round(v.videoWidth * k);
+  c.height = Math.round(v.videoHeight * k);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  const dataUrl = c.toDataURL("image/jpeg", 0.82);
+  stopCamera();
+  const kind = S.tab;
+  banner("", esc(t("top.checking")));
+  $("photoPreview").src = dataUrl;
+  $("photoPreview").classList.remove("hidden");
+  showResult(kind, await askVision({ kind, image: dataUrl }));
+}
+
+// ---------- step 4: guidance and totals ----------
+const amt = n => ([0.25, 0.5, 0.75, 1].includes(n) ? t(`top.amt.${n}`) : t("top.amt.n", { n: pans(n) }));
+
+function renderGuide(kind) {
+  const g = S.extra?.guidance;
+  const box = $("guideBox");
+  if (kind !== "open" || !g) { box.classList.add("hidden"); return; }
+  const lines = g.bins.filter(b => b.usedYesterday != null && b.fresh);
+  box.innerHTML = `<h3>${esc(t("top.guideTitle"))}</h3>` + (lines.length
+    ? `<ul>${lines.map(b => `<li>${esc(t("top.guideLine", { bin: b.bin, setOut: amt(b.setOut), used: amt(b.usedYesterday) }))}</li>`).join("")}</ul>`
+    : `<p style="margin:0">${esc(t("top.guideNone"))}</p>`);
+  box.classList.remove("hidden");
+}
+
+function renderTotals(kind) {
+  const tt = S.extra?.totals;
+  if (kind !== "close" || !tt) { $("totalsBox").textContent = ""; return; }
+  const parts = [t("top.totals", { days: tt.days, pans: pansText(tt.pans) })];
+  if (tt.dollars > 0) parts.push(t("top.totalsCost", { d: tt.dollars.toFixed(2) }));
+  if (tt.pansNoCost > 0) parts.push(t("top.totalsNoCost", { pans: pansText(tt.pansNoCost) }));
+  parts.push(t("top.totalsBoba", { n: Math.round(tt.bobaDrinks) }));
+  parts.push(tt.co2eKg == null ? t("top.totalsCo2") : `${tt.co2eKg} kg CO₂e`);
+  $("totalsBox").textContent = parts.join(" · ");
+}
+
 function enterByHand() {
   S.est[S.tab] = null;
   banner("", "");
@@ -195,6 +274,8 @@ function renderCheck(kind) {
   }
   renderNegatives();
   renderUsage();
+  renderGuide(kind);
+  renderTotals(kind);
 }
 
 function renderNegatives() {
@@ -287,9 +368,23 @@ function renderRefills() {
   }));
 }
 
+// Step 4: owner-approved suggestions (approving changes nothing by itself).
+function renderSuggestions() {
+  const list = (S.extra?.suggestions || []).filter(s => s.status === "open");
+  $("suggestBox").innerHTML = (S.owner && S.suggMsg ? `<p class="tp-msg" style="color:var(--mint)">${esc(S.suggMsg)}</p>` : "") + (S.owner ? list.map(s => `<div class="tp-sugg"><p>${esc(t("top.suggTitle", { bin: s.bin, high: s.evidence.highDays, days: s.evidence.days }))}</p>
+    <div class="btns"><button class="btn" type="button" data-sugg="${esc(s.id)}" data-d="approved">${esc(t("top.suggApprove"))}</button>
+    <button class="btn ghost" type="button" data-sugg="${esc(s.id)}" data-d="dismissed">${esc(t("top.suggDismiss"))}</button></div></div>`).join("") : "");
+  $("suggestBox").querySelectorAll("[data-sugg]").forEach(btn => btn.addEventListener("click", async () => {
+    const r = await call("/api/toppings", { method: "POST", body: { ...ctx(), action: "decideSuggestion", id: btn.dataset.sugg, decision: btn.dataset.d } });
+    if (r.ok) S.suggMsg = t(btn.dataset.d === "approved" ? "top.suggApproved" : "top.suggDismissed");
+    await load();
+  }));
+}
+
 function renderBins() {
   $("ownerForm").classList.toggle("hidden", S.owner);
   $("addBin").classList.toggle("hidden", !S.owner);
+  renderSuggestions();
   if (!S.owner) { $("binList").innerHTML = ""; return; }
   const list = [...bins(), ...Array.from({ length: S.newBins }, (_, i) => ({ id: "", name: "", row_no: 1, col_no: bins().length + i + 1, discard_at_close: null, pan_label: null, pan_cost: null }))];
   const badge = `<span class="tp-assumed">${esc(t("top.assumed"))}</span>`;
@@ -364,6 +459,11 @@ async function start() {
   }));
   $("photoInput").addEventListener("change", e => { onPhoto(e.target.files[0]); e.target.value = ""; });
   $("byHand").addEventListener("click", enterByHand);
+  $("takePhoto").addEventListener("click", takePhoto);
+  $("camShot").addEventListener("click", shootCamera);
+  $("camCancel").addEventListener("click", stopCamera);
+  $("camOverlayOn").addEventListener("change", e => $("camOverlay").classList.toggle("hidden", !e.target.checked));
+  $("camSheet").addEventListener("keydown", e => { if (e.key === "Escape") stopCamera(); });
   $("confirmAll").addEventListener("click", confirmAll);
   $("whyClose").addEventListener("click", () => $("whySheet").classList.add("hidden"));
   $("whySheet").addEventListener("keydown", e => { if (e.key === "Escape") $("whySheet").classList.add("hidden"); });

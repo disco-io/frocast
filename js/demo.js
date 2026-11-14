@@ -76,9 +76,12 @@ async function renderSide() {
   const leftovers = boba.waste.reduce((a, w) => a + w.amount, 0);
   const tops = await fetchToppings();
   const topWaste = tops ? tops.waste.reduce((a, w) => a + w.amount, 0) : 0;
+  const week = await call(`/api/toppings?${new URLSearchParams({ scenario: "demo", day: day().key, totals: 1, days: 7 })}`);
+  const wk = week.ok ? week.data : null;
   $("totals").innerHTML =
     `<div>Plan for the day: <b>${Math.round(planDay)}</b> drinks of boba vs. your usual <b>${usualDay}</b> (${k.habit} full batches, cook time ${lead} min) <span class="sample">estimate</span></div>` +
-    `<div>Boba leftovers logged: <b>${Math.round(leftovers)}</b> drinks · topping waste: <b>${topWaste}</b> pans</div>`;
+    `<div>Today: boba leftovers <b>${Math.round(leftovers)}</b> drinks · toppings thrown out <b>${topWaste}</b> pans</div>` +
+    (wk ? `<div>Last 7 days of toppings: <b>${wk.pans}</b> pans · <b>$${wk.dollars.toFixed(2)}</b> for bins with a cost${wk.pansNoCost ? ` · ${wk.pansNoCost} pans with no cost set` : ""} <span class="sample">simulated history</span></div>` : "");
 }
 
 // ---------- hybrid script ----------

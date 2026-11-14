@@ -31,9 +31,10 @@
 
     <section id="checkView" class="card">
       <p class="tp-lead" id="checkLead"></p>
+      <div id="guideBox" class="tp-guide hidden"></div>
       <div class="tp-status" id="checkStatus"></div>
       <div class="tp-photo">
-        <label class="btn tp-big" for="photoInput"><span data-t="top.takePhoto">📷 Take photo</span></label>
+        <button class="btn tp-big" type="button" id="takePhoto" data-t="top.takePhoto">📷 Take photo</button>
         <input id="photoInput" type="file" accept="image/*" capture="environment" class="tp-file">
         <button class="btn ghost tp-big" type="button" id="byHand" data-t="top.byHand">Enter by hand</button>
         <button class="btn ghost tp-big hidden" type="button" id="samplePhoto" data-t="top.samplePhoto">Use sample photo (demo)</button>
@@ -47,6 +48,7 @@
       </div>
       <div id="negatives"></div>
       <div id="usageBox" class="tp-usage"></div>
+      <div id="totalsBox" class="tp-totals"></div>
     </section>
 
     <section id="refillsView" class="card hidden">
@@ -62,6 +64,7 @@
         <button class="btn" type="submit" data-t="top.unlock">Unlock bin setup</button>
         <span class="tp-msg" id="ownerMsg"></span>
       </form>
+      <div id="suggestBox"></div>
       <div id="binList"></div>
       <button class="btn ghost hidden" type="button" id="addBin" data-t="top.addBin">Add bin</button>
     </section>
@@ -74,6 +77,18 @@
     <div class="why" id="whyRows"></div>
     <div class="formula" id="whyFormula"></div>
     <button class="btn ghost" type="button" id="whyClose" data-t="why.close">Close</button>
+  </div>
+</div>
+
+<div class="tp-sheet hidden" id="camSheet" role="dialog" aria-modal="true" aria-labelledby="camTitle">
+  <div class="card tp-sheetcard tp-camcard">
+    <h2 id="camTitle" data-t="top.camTitle">Line up the bins with this morning's photo</h2>
+    <div class="tp-camview"><video id="camVideo" autoplay playsinline muted></video><img id="camOverlay" alt=""></div>
+    <label class="tp-camopt"><input type="checkbox" id="camOverlayOn" checked> <span data-t="top.camOverlay">Show this morning's photo</span></label>
+    <div class="tp-cambtns">
+      <button class="btn tp-big" type="button" id="camShot" data-t="top.camShot">Take photo</button>
+      <button class="btn ghost tp-big" type="button" id="camCancel" data-t="clock.cancel">Cancel</button>
+    </div>
   </div>
 </div>
 
