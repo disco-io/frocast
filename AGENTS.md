@@ -46,7 +46,7 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 | Person / agent | Task | Files | Started |
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
-| Drew (Claude) | Turso + device pairing | new: `api/auth.js` `api/data.js` `api/_lib/*` `db/` `middleware.js` `vercel.json` `pair.html` `js/pair.js` `js/api.js` `tests/`; small edits: `server.js` (pairing gate, query, test export) `js/store.js` `js/app.js` (startup only) `package.json` `README.md` | Sat 14:30 |
+| Drew (Claude) | Froyo/tea split in the forecast | `js/config.js` `js/model.js` (forecast, bobaPlan, fruitPlan, machines); `js/app.js` (Today why rows, chart, outlook); `index.html` (chart legend only); new `tests/model.test.mjs` | Sat 15:40 |
 
 ## Project layout
 ```

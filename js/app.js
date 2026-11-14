@@ -19,6 +19,7 @@ const persist = opts => store.save({ s: st.s, events: st.events, logs: st.logs, 
 const $ = id => document.getElementById(id);
 const esc = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmtH = h => `${((h + 11) % 12) + 1}:00 ${h < 12 ? "AM" : "PM"}`;
+const fmtM = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 const SIZE = { 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "full" };
 const shortDate = d => `${DOW[d.getDay()]} ${MON[d.getMonth()]} ${d.getDate()}`;
 
@@ -54,46 +55,54 @@ function renderToday() {
   $("dayTitle").textContent = `${dow}, ${MON[d.getMonth()]} ${d.getDate()}`;
   $("cust").textContent = fc.customers;
   const drop = Math.round((1 - fc.customers / fc.base) * 100);
-  $("cmp").innerHTML = drop > 0
+  $("cmp").innerHTML = (drop > 0
     ? `<b>${drop}% fewer</b> than a typical warm ${dow} (${fc.base})`
-    : `${-drop}% more than a typical warm ${dow} (${fc.base})`;
+    : `${-drop}% more than a typical warm ${dow} (${fc.base})`) +
+    ` · <span class="sw" style="background:var(--pink)"></span>${fc.froyo} froyo · <span class="sw" style="background:var(--blue)"></span>${fc.tea} tea`;
   $("wx").innerHTML = `<span>🌡 <b>${day.temp}°F</b></span><span>☁ <b>${day.cond}</b></span>` +
     dayEvents(st.events, day.key).map(e => `<span>${TYPES[e.type].icon} <b>${esc(e.label)}</b></span>`).join("");
 
+  const cls = m => (m < 0.99 ? "down" : m > 1.01 ? "up" : "flat");
   $("why").innerHTML = fc.factors.map(x => {
-    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)}</span><span class="x flat">${x.base} customers</span></div>`;
-    const cls = x.m < 0.99 ? "down" : x.m > 1.01 ? "up" : "flat";
-    return `<div class="row"><span>${esc(x.label)}</span><span class="x ${cls}">×${x.m.toFixed(2)}</span></div>`;
+    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
+    if (x.m === undefined) return `<div class="row"><span>${esc(x.label)}</span><span><span class="x ${cls(x.mf)}">froyo ×${x.mf.toFixed(2)}</span> · <span class="x ${cls(x.mt)}">tea ×${x.mt.toFixed(2)}</span></span></div>`;
+    return `<div class="row"><span>${esc(x.label)}</span><span class="x ${cls(x.m)}">×${x.m.toFixed(2)}</span></div>`;
   }).join("");
-  $("formula").textContent = `${fc.base} ${fc.factors.slice(1).map(x => "× " + x.m.toFixed(2)).join(" ")} ≈ ${fc.customers} customers`;
+  const chain = key => fc.factors.slice(1).map(x => "× " + (x[key] ?? x.m).toFixed(2)).join(" ");
+  const [b0] = fc.factors;
+  $("formula").textContent = `Froyo ${Math.round(b0.froyo)} ${chain("mf")} ≈ ${fc.froyo} · Tea ${Math.round(b0.tea)} ${chain("mt")} ≈ ${fc.tea} → ${fc.customers} customers`;
 
-  const bp = bobaPlan(fc.customers, day, st.events, st.s);
-  const fp = fruitPlan(fc.customers, st.s);
-  const mach = machines(fc.customers);
+  const bp = bobaPlan(fc, day, st.events, st.s);
+  const fp = fruitPlan(fc, st.s);
+  const mach = machines(fc.froyo);
+  const cookAt = h => fmtM(h * 60 - (st.s.cookLead ?? 45));
   const savedDrinks = Math.max(0, Math.round(bp.oldTossed - bp.tossed));
   $("prep").innerHTML = `
     <div class="item boba"><h3>🧋 Boba: cook ${Math.round(bp.cooked)} drinks' worth, in ${bp.batches.length} small batch${bp.batches.length === 1 ? "" : "es"}</h3>
-      <ul>${bp.batches.map(b => `<li><b>${fmtH(b.h)}</b>: ${SIZE[b.size]} batch (~${Math.round(b.drinks)} drinks)</li>`).join("") || "<li>No boba needed</li>"}</ul>
+      <ul>${bp.batches.map(b => `<li><b>Start ${cookAt(b.h)}</b> (ready ${fmtH(b.h)}): ${SIZE[b.size]} batch (~${Math.round(b.drinks)} drinks)</li>`).join("") || "<li>No boba needed</li>"}</ul>
       <div class="saved">Est. tossed: ~${Math.round(bp.tossed)} drinks' worth, vs. ~${Math.round(bp.oldTossed)} with ${st.s.oldBatches} full batch${st.s.oldBatches === 1 ? "" : "es"} (saves ~${savedDrinks})</div></div>
     <div class="item fruit"><h3>🍓 Fruit: cut ${fp.containers} container${fp.containers === 1 ? "" : "s"} per fruit</h3>
       <ul><li>~${Math.round(fp.cups)} cups expected to add fresh fruit</li><li>Cut half at open, the rest when it runs low</li></ul></div>
     <div class="item yo"><h3>🍦 Froyo: run ${mach} of 5 machines</h3>
       <ul><li>${mach < 5 ? "Pause the slowest flavors until it warms up" : "Busy day: run all machines"}</li><li>Keep your usual winter fill levels</li></ul></div>`;
 
-  drawHourly(hourly(fc.customers, day, st.events), bp.batches);
+  drawHourly(hourly(fc.froyo, day, st.events), hourly(fc.tea, day, st.events), bp.batches);
 }
 
-function drawHourly(hc, batches) {
-  const max = Math.max(...hc, 1);
+// Stacked bars: froyo (pink) at the bottom, tea (blue) on top, 2px gap between
+function drawHourly(hf, ht, batches) {
+  const tot = hf.map((f, i) => f + ht[i]);
+  const max = Math.max(...tot, 1);
   const W = 560, H = 190, L = 30, B = 26, bw = (W - L - 10) / HOURS.length;
   let svg = "";
   [0, 0.5, 1].forEach(t => {
     const y = H - B - t * (H - B - 20);
     svg += `<line x1="${L}" x2="${W - 10}" y1="${y}" y2="${y}" stroke="#eee"/><text x="${L - 6}" y="${y + 4}" font-size="10" fill="#999" text-anchor="end">${Math.round(max * t)}</text>`;
   });
-  hc.forEach((c, i) => {
-    const h = (c / max) * (H - B - 20), x = L + i * bw + 4;
-    svg += `<rect x="${x}" y="${H - B - h}" width="${bw - 8}" height="${h}" rx="4" fill="var(--pink)" opacity=".85"/>`;
+  hf.forEach((c, i) => {
+    const hF = (c / max) * (H - B - 20), hT = (ht[i] / max) * (H - B - 20), x = L + i * bw + 4;
+    svg += `<rect x="${x}" y="${H - B - hF}" width="${bw - 8}" height="${hF}" fill="var(--pink)"><title>${fmtH(HOURS[i])}: ${Math.round(c)} froyo</title></rect>`;
+    svg += `<rect x="${x}" y="${H - B - hF - 2 - hT}" width="${bw - 8}" height="${Math.max(hT, 0)}" rx="4" fill="var(--blue)"><title>${fmtH(HOURS[i])}: ${Math.round(ht[i])} tea</title></rect>`;
     if (i % 2 === 0) svg += `<text x="${x + (bw - 8) / 2}" y="${H - 8}" font-size="10" fill="#888" text-anchor="middle">${fmtH(HOURS[i]).replace(":00", "")}</text>`;
   });
   batches.forEach(b => {
@@ -105,7 +114,8 @@ function drawHourly(hc, batches) {
 
 // ---------------- Outlook ----------------
 function renderOutlook() {
-  const vals = st.days.map(d => forecast(d, st.events, st.s).customers);
+  const fcs = st.days.map(d => forecast(d, st.events, st.s));
+  const vals = fcs.map(f => f.customers);
   const n = st.days.length;
   const W = 900, H = 230, L = 34, B = 34, max = Math.max(...vals, 10) * 1.15, bw = (W - L - 10) / n;
   let svg = "";
@@ -118,7 +128,9 @@ function renderOutlook() {
   });
   vals.forEach((v, i) => {
     const h = (v / max) * (H - B - 20), x = L + i * bw + 6, cx = x + (bw - 12) / 2, d = st.days[i].date;
-    svg += `<rect x="${x}" y="${H - B - h}" width="${bw - 12}" height="${h}" rx="5" fill="var(--pink)"/>`;
+    const hF = (fcs[i].froyo / max) * (H - B - 20), hT = Math.max(0, h - hF - 2);
+    svg += `<rect x="${x}" y="${H - B - hF}" width="${bw - 12}" height="${hF}" fill="var(--pink)"><title>${fcs[i].froyo} froyo</title></rect>`;
+    svg += `<rect x="${x}" y="${H - B - h}" width="${bw - 12}" height="${hT}" rx="5" fill="var(--blue)"><title>${fcs[i].tea} tea</title></rect>`;
     svg += `<text x="${cx}" y="${H - B - h - 6}" font-size="12" font-weight="700" fill="#333" text-anchor="middle">${v}</text>`;
     svg += `<text x="${cx}" y="${H - 18}" font-size="11" fill="#666" text-anchor="middle">${DOW[d.getDay()]}</text>`;
     svg += `<text x="${cx}" y="${H - 5}" font-size="11" fill="#999" text-anchor="middle">${MON[d.getMonth()]} ${d.getDate()}</text>`;
@@ -129,12 +141,12 @@ function renderOutlook() {
     `<tr><th>Day</th><th>Weather</th><th>Events</th><th>Customers</th><th>Boba batches</th><th>Fruit containers</th></tr>` +
     st.days.map((d, i) => {
       const c = vals[i];
-      const bp = bobaPlan(c, d, st.events, st.s);
+      const bp = bobaPlan(fcs[i], d, st.events, st.s);
       const notes = dayEvents(st.events, d.key)
         .map(e => `<span class="pill ${e.type === "break" ? "brk" : "ev"}">${TYPES[e.type].icon} ${esc(e.label)}</span>`).join(" ");
       return `<tr><td class="nowrap">${shortDate(d.date)}</td><td>${d.temp}°F · ${d.cond}</td><td>${notes}</td>
-        <td class="n"><b>${c}</b></td><td class="n">${bp.batches.map(b => SIZE[b.size]).join(", ") || "–"}</td>
-        <td class="n">${fruitPlan(c, st.s).containers}</td></tr>`;
+        <td class="n"><b>${c}</b> <span style="color:var(--muted)">(${fcs[i].froyo} froyo · ${fcs[i].tea} tea)</span></td><td class="n">${bp.batches.map(b => SIZE[b.size]).join(", ") || "–"}</td>
+        <td class="n">${fruitPlan(fcs[i], st.s).containers}</td></tr>`;
     }).join("");
 }
 
