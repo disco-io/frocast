@@ -14,6 +14,7 @@ process.env.TURSO_DATABASE_URL = `file:${dbFile}`;
 process.env.OWNER_PIN = "2468";
 process.env.DEVICE_SECRET = "test-secret";
 process.env.TOPPING_CAMERA = "1";
+process.env.REQUIRE_PAIRING = "1";   // these tests cover the PIN screen, which is off by default locally
 process.env.CRON_SECRET = "cron-test";
 delete process.env.VERCEL;
 delete process.env.ANTHROPIC_API_KEY;
@@ -165,4 +166,12 @@ test("photos older than the retention setting are deleted; numbers stay", async 
   assert.ok((await day()).checks.open.levels[ids.Strawberries], "confirmed numbers kept");
   assert.equal((await fetch(`${base}/api/cron`)).status, 401);
   assert.equal((await fetch(`${base}/api/cron`, { headers: { authorization: "Bearer cron-test" } })).status, 200);
+});
+
+test("running locally (pairing off), bin setup opens without the owner PIN", async () => {
+  delete process.env.REQUIRE_PAIRING;
+  const r = await fetch(`${base}/api/toppings`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveBin", bin: { name: "Kiwi", row: 2, col: 2 } }) });
+  process.env.REQUIRE_PAIRING = "1";
+  assert.equal(r.status, 200);
+  assert.equal((await post({ action: "saveBin", bin: { name: "Lychee", row: 2, col: 3 } }, staff)).status, 403, "deployed rules still need the owner PIN");
 });
