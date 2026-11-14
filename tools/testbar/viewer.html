@@ -24,6 +24,7 @@
   #help .card { background: #fff; color: var(--ink); border-radius: 18px; padding: 22px; max-width: 620px; line-height: 1.5; }
   #help code { background: #f2f0ec; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
   .hidden { display: none !important; }
+  body.nocursor { cursor: none; }
 </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
       <li>Here, press <b>→</b> for the next photo. On the phone, tap <b>📷 Take photo</b> and fill the frame with the topping bar on this screen.</li>
       <li>This page scores the photo against its answer key as soon as the phone's check finishes. You don't need to confirm on the phone.</li>
     </ol>
-    <p>Keys: <b>→ / ←</b> next and previous photo · <b>A</b> show or hide the answers · <b>H</b> hide the bar · <b>R</b> reset the score.</p>
+    <p>Press <b>F</b> (or ⛶ Full screen) so tabs and the Dock aren't in the shot. Keys: <b>→ / ←</b> next and previous photo · <b>A</b> show or hide the answers · <b>H</b> hide the bar · <b>R</b> reset the score.</p>
     <button id="start">Start</button>
   </div>
 </div>
@@ -51,6 +52,7 @@
   <button class="ghost" id="next">▶</button>
   <span class="status" id="status">Loading…</span>
   <span class="tally" id="tally"></span>
+  <button class="ghost" id="full">⛶ Full screen</button>
   <button class="ghost" id="answers">Answers</button>
   <button class="ghost" id="reset">Reset score</button>
 </div>
@@ -152,8 +154,14 @@ async function poll() {
 
 function wake() {
   $("bar").classList.remove("hide");
+  document.body.classList.remove("nocursor");
   clearTimeout(S.idle);
-  S.idle = setTimeout(() => $("bar").classList.add("hide"), 3000);
+  S.idle = setTimeout(() => { $("bar").classList.add("hide"); document.body.classList.add("nocursor"); }, 3000);
+}
+
+function fullScreen() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen?.().catch(() => {});
 }
 
 async function start() {
@@ -168,9 +176,10 @@ async function start() {
   poll();
 }
 
-$("start").addEventListener("click", () => { $("help").classList.add("hidden"); wake(); });
+$("start").addEventListener("click", () => { $("help").classList.add("hidden"); wake(); fullScreen(); });
 $("next").addEventListener("click", () => show(S.i + 1));
 $("prev").addEventListener("click", () => show(S.i - 1));
+$("full").addEventListener("click", fullScreen);
 $("answers").addEventListener("click", () => { S.showAnswers = !S.showAnswers; S.showAnswers ? answers() : $("result").classList.add("hidden"); });
 $("reset").addEventListener("click", () => { tally = {}; save(); renderTally(); });
 document.addEventListener("mousemove", wake);
@@ -180,6 +189,7 @@ document.addEventListener("keydown", e => {
   else if (e.key.toLowerCase() === "a") $("answers").click();
   else if (e.key.toLowerCase() === "h") { clearTimeout(S.idle); $("bar").classList.toggle("hide"); return; }
   else if (e.key.toLowerCase() === "r") $("reset").click();
+  else if (e.key.toLowerCase() === "f") fullScreen();
   else return;
   wake();
 });
