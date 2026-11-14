@@ -1,0 +1,1445 @@
+{
+  "summary": {
+    "when": "2026-11-14T21:55:17.842Z",
+    "base": "http://localhost:8000",
+    "model": "claude-haiku-5-5",
+    "photos": 30,
+    "clean": {
+      "photos": 24,
+      "bins": 144,
+      "exact": 86,
+      "near": 132,
+      "prefilled": 144,
+      "preExact": 86,
+      "preNear": 132,
+      "needsLook": 0,
+      "falseAlarms": 0,
+      "byConf": [
+        {
+          "conf": "high",
+          "n": 32,
+          "exact": 24
+        },
+        {
+          "conf": "medium",
+          "n": 112,
+          "exact": 62
+        },
+        {
+          "conf": "low",
+          "n": 0,
+          "exact": 0
+        }
+      ],
+      "perBin": [
+        {
+          "name": "Strawberries",
+          "n": 24,
+          "exact": 16
+        },
+        {
+          "name": "Mango",
+          "n": 24,
+          "exact": 19
+        },
+        {
+          "name": "Kiwi",
+          "n": 24,
+          "exact": 16
+        },
+        {
+          "name": "Mochi",
+          "n": 24,
+          "exact": 17
+        },
+        {
+          "name": "Rainbow sprinkles",
+          "n": 24,
+          "exact": 9
+        },
+        {
+          "name": "Popping boba",
+          "n": 24,
+          "exact": 9
+        }
+      ],
+      "confusion": [
+        [
+          32,
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          13,
+          8,
+          1
+        ],
+        [
+          0,
+          0,
+          7,
+          15,
+          1
+        ],
+        [
+          0,
+          0,
+          2,
+          30,
+          6
+        ],
+        [
+          0,
+          0,
+          2,
+          9,
+          13
+        ]
+      ]
+    },
+    "bad": [
+      {
+        "file": "25-glare.jpg",
+        "variant": "glare",
+        "caught": false,
+        "how": "missed (usable, problems=[])"
+      },
+      {
+        "file": "26-glare.jpg",
+        "variant": "glare",
+        "caught": true,
+        "how": "unusable: glare"
+      },
+      {
+        "file": "27-blur.jpg",
+        "variant": "blur",
+        "caught": true,
+        "how": "unusable: blur"
+      },
+      {
+        "file": "28-dark.jpg",
+        "variant": "dark",
+        "caught": false,
+        "how": "missed (usable, problems=[])"
+      },
+      {
+        "file": "29-cutoff.jpg",
+        "variant": "cutoff",
+        "caught": true,
+        "how": "unusable: bins_cut_off"
+      },
+      {
+        "file": "30-hand.jpg",
+        "variant": "hand",
+        "caught": true,
+        "how": "person flagged, photo not stored"
+      }
+    ],
+    "latencyMs": {
+      "avg": 4393,
+      "max": 5800
+    }
+  },
+  "readings": [
+    {
+      "file": "01-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "01-clean.jpg",
+      "name": "Mango",
+      "truth": 0.5,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "01-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "01-clean.jpg",
+      "name": "Mochi",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "01-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "01-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "high",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "02-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "02-clean.jpg",
+      "name": "Mango",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "02-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.5,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "02-clean.jpg",
+      "name": "Mochi",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "02-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "02-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "03-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "03-clean.jpg",
+      "name": "Mango",
+      "truth": 0.25,
+      "level": 0.25,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.25
+    },
+    {
+      "file": "03-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.25,
+      "level": 0.25,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.25
+    },
+    {
+      "file": "03-clean.jpg",
+      "name": "Mochi",
+      "truth": 1,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "03-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "03-clean.jpg",
+      "name": "Popping boba",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "04-clean.jpg",
+      "name": "Strawberries",
+      "truth": 1,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "04-clean.jpg",
+      "name": "Mango",
+      "truth": 1,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "04-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "04-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "04-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 0.25,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.25
+    },
+    {
+      "file": "04-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "05-clean.jpg",
+      "name": "Strawberries",
+      "truth": 1,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "05-clean.jpg",
+      "name": "Mango",
+      "truth": 0.5,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "05-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "05-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "05-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "05-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "06-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "06-clean.jpg",
+      "name": "Mango",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "06-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "06-clean.jpg",
+      "name": "Mochi",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "06-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "06-clean.jpg",
+      "name": "Popping boba",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "07-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "07-clean.jpg",
+      "name": "Mango",
+      "truth": 0.75,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "07-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "07-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "07-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "07-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "08-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "08-clean.jpg",
+      "name": "Mango",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "08-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "high",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "08-clean.jpg",
+      "name": "Mochi",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "08-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "08-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "09-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "09-clean.jpg",
+      "name": "Mango",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "09-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "09-clean.jpg",
+      "name": "Mochi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "09-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "09-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "10-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.75,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "10-clean.jpg",
+      "name": "Mango",
+      "truth": 0.5,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "10-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "10-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "10-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "10-clean.jpg",
+      "name": "Popping boba",
+      "truth": 1,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "11-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "11-clean.jpg",
+      "name": "Mango",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "11-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "11-clean.jpg",
+      "name": "Mochi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "11-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "high",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "11-clean.jpg",
+      "name": "Popping boba",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "high",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "12-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "12-clean.jpg",
+      "name": "Mango",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "12-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "12-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "12-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.75,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "12-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "13-clean.jpg",
+      "name": "Strawberries",
+      "truth": 1,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "13-clean.jpg",
+      "name": "Mango",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "13-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "13-clean.jpg",
+      "name": "Mochi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "13-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 1,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "13-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "14-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "14-clean.jpg",
+      "name": "Mango",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "14-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "14-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.25,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "14-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 1,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "14-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "15-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "15-clean.jpg",
+      "name": "Mango",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "15-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "15-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "15-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "15-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "16-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.25,
+      "level": 0.25,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.25
+    },
+    {
+      "file": "16-clean.jpg",
+      "name": "Mango",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "16-clean.jpg",
+      "name": "Kiwi",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "high",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "16-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "16-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "16-clean.jpg",
+      "name": "Popping boba",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "high",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "17-clean.jpg",
+      "name": "Strawberries",
+      "truth": 1,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "17-clean.jpg",
+      "name": "Mango",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "17-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "17-clean.jpg",
+      "name": "Mochi",
+      "truth": 1,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "17-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "17-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "18-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "18-clean.jpg",
+      "name": "Mango",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "18-clean.jpg",
+      "name": "Kiwi",
+      "truth": 1,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "18-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.5,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "18-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.75,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "18-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "19-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "19-clean.jpg",
+      "name": "Mango",
+      "truth": 1,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "19-clean.jpg",
+      "name": "Kiwi",
+      "truth": 1,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "19-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "19-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "19-clean.jpg",
+      "name": "Popping boba",
+      "truth": 1,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "20-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "20-clean.jpg",
+      "name": "Mango",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "20-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "20-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "20-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0,
+      "level": 0.25,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.25
+    },
+    {
+      "file": "20-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.75,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "21-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "21-clean.jpg",
+      "name": "Mango",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "21-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "21-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "21-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 1,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "21-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "22-clean.jpg",
+      "name": "Strawberries",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "22-clean.jpg",
+      "name": "Mango",
+      "truth": 0.5,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "22-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "22-clean.jpg",
+      "name": "Mochi",
+      "truth": 1,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "22-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0.25,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "22-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "23-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.5,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "23-clean.jpg",
+      "name": "Mango",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "23-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.75,
+      "level": 1,
+      "conf": "high",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "23-clean.jpg",
+      "name": "Mochi",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "23-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0,
+      "level": 0,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "23-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.5,
+      "level": 1,
+      "conf": "medium",
+      "visible": true,
+      "pre": 1
+    },
+    {
+      "file": "24-clean.jpg",
+      "name": "Strawberries",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "24-clean.jpg",
+      "name": "Mango",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "24-clean.jpg",
+      "name": "Kiwi",
+      "truth": 0.5,
+      "level": 0.5,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.5
+    },
+    {
+      "file": "24-clean.jpg",
+      "name": "Mochi",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    },
+    {
+      "file": "24-clean.jpg",
+      "name": "Rainbow sprinkles",
+      "truth": 0,
+      "level": 0,
+      "conf": "high",
+      "visible": true,
+      "pre": 0
+    },
+    {
+      "file": "24-clean.jpg",
+      "name": "Popping boba",
+      "truth": 0.75,
+      "level": 0.75,
+      "conf": "medium",
+      "visible": true,
+      "pre": 0.75
+    }
+  ]
+}
