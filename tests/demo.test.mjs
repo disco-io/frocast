@@ -88,3 +88,43 @@ test("sample photo: canned estimates, labeled simulated, never stored; Kiwi need
   assert.equal(v.data.bins.find(b => b.id === kiwi.id).confidence, "low");
   assert.equal((await post("vision", { kind: "close", sample: true })).status, 400, "live mode needs a real photo");
 });
+
+test("step 4: smaller-pan suggestion from two weeks of closes; owner decides; approval changes nothing else", async () => {
+  await post("demo", { action: "reset" });
+  const q = { scenario: "demo", day: NOV, suggestions: 1 };
+  const { suggestions } = await get("toppings", q);
+  assert.deepEqual(suggestions.map(s => s.bin), ["Strawberries"], "ends ¾+ on most days");
+  assert.ok(suggestions[0].evidence.days >= 5);
+  const before = (await get("toppings", { scenario: "demo", day: NOV })).bins.find(b => b.name === "Strawberries");
+  assert.equal((await post("toppings", { scenario: "demo", action: "decideSuggestion", id: suggestions[0].id, decision: "approved" })).status, 200);
+  const after = (await get("toppings", { scenario: "demo", day: NOV })).bins.find(b => b.name === "Strawberries");
+  assert.deepEqual(after, before, "approving doesn't change bin settings");
+  assert.equal((await get("toppings", q)).suggestions[0].status, "approved", "stays decided after recompute");
+  assert.equal((await post("toppings", { scenario: "demo", action: "decideSuggestion", id: suggestions[0].id, decision: "approved" })).status, 400);
+});
+
+test("step 4: waste totals in pans, dollars only for bins with a cost", async () => {
+  const t = await get("toppings", { scenario: "demo", day: "2026-11-13", totals: 1, days: 7 });
+  const hist = demoHistory(NOV).slice(-7);
+  const cost = Object.fromEntries(DEMO_BINS.map(b => [b.name, b.panCost]));
+  const discard = Object.fromEntries(DEMO_BINS.map(b => [b.name, b.discard !== false]));
+  let pans = 0, dollars = 0, noCost = 0;
+  for (const h of hist) for (const b of h.bins) if (discard[b.name] && b.close > 0) {
+    pans += b.close;
+    if (cost[b.name] != null) dollars += b.close * cost[b.name]; else noCost += b.close;
+  }
+  assert.equal(t.pans, pans);
+  assert.equal(t.dollars, Math.round(dollars * 100) / 100);
+  assert.equal(t.pansNoCost, noCost);
+  assert.equal(t.co2eKg, null, "no emissions factor set");
+  assert.equal(t.byBin.find(b => b.bin === "Kiwi").dollars, null);
+});
+
+test("step 4: morning guidance from yesterday's usage", async () => {
+  const g = await get("toppings", { scenario: "demo", day: NOV, guidance: 1 });
+  assert.equal(g.yesterday, "2026-11-13");
+  const y = demoHistory(NOV).at(-1).bins.find(b => b.name === "Strawberries");
+  const s = g.bins.find(b => b.bin === "Strawberries");
+  assert.equal(s.usedYesterday, y.open + y.refill - y.close);
+  assert.ok(s.setOut >= s.usedYesterday && s.setOut % 0.5 === 0);
+});

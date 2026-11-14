@@ -13,6 +13,7 @@ import { requireDevice, requireOwner, sendError } from "./_lib/auth.js";
 import { toppingsEnabled } from "./_lib/photos.js";
 import { shopNow, isDay, isMin } from "./_lib/shop-time.js";
 import { isLevel, REFILLS, usage, discards, outcome } from "../js/toppings-math.js";
+import { suggestions, decide, totals, guidance } from "./_lib/topping-insights.js";
 
 function when(src) {
   const scenario = src.scenario === "demo" ? "demo" : "live";
@@ -82,7 +83,11 @@ export default async function handler(req, res) {
         res.setHeader("cache-control", "private, no-store");
         return res.end(Buffer.from(r.rows[0].data));
       }
-      return res.status(200).json({ ...(await dayData(db, when(req.query || {}))), owner: !!(await requireOwner(req)) });
+      const tq = when(req.query || {});
+      if (req.query?.suggestions) return res.status(200).json({ suggestions: await suggestions(db, tq.scenario, tq.day) });
+      if (req.query?.totals) return res.status(200).json(await totals(db, tq.scenario, tq.day, Math.min(31, Math.max(1, Number(req.query.days) || 7))));
+      if (req.query?.guidance) return res.status(200).json(await guidance(db, tq.scenario, tq.day));
+      return res.status(200).json({ ...(await dayData(db, tq)), owner: !!(await requireOwner(req)) });
     }
     if (req.method !== "POST") return sendError(res, 405, "Use GET or POST");
     const body = req.body || {};
@@ -110,6 +115,12 @@ export default async function handler(req, res) {
         args: [id, LOCATION, t.scenario, name, row, col, discard, label, cost, now(), now()]
       });
       return res.status(200).json({ id });
+    }
+
+    if (body.action === "decideSuggestion") {
+      if (!(await requireOwner(req))) return sendError(res, 403, "Owner PIN required");
+      const ok = await decide(db, body.id, body.decision, device.id);
+      return ok ? res.status(200).json({ id: String(body.id), status: body.decision }) : sendError(res, 400, "No open suggestion with that id");
     }
 
     if (body.action === "refill") {

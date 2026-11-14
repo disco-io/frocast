@@ -142,6 +142,19 @@ CREATE TABLE IF NOT EXISTS photos (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS photos_age ON photos (location_id, created_at);
+-- Owner-approved suggestions (e.g. "try a smaller pan"). Approving never changes settings by itself.
+CREATE TABLE IF NOT EXISTS suggestions (
+  id TEXT PRIMARY KEY,
+  location_id TEXT NOT NULL,
+  scenario TEXT NOT NULL DEFAULT 'live',
+  bin_id TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  evidence_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at TEXT NOT NULL,
+  decided_at TEXT,
+  decided_by TEXT
+);
 `;
 
 // Columns added after the first release (run once each; "duplicate column" means already done).
