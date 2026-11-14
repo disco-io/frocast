@@ -70,4 +70,76 @@ CREATE TABLE IF NOT EXISTS waste_log (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS waste_day ON waste_log (location_id, scenario, day);
+-- Topping bar photo check (feature flag TOPPING_CAMERA).
+-- discard_at_close / pan_label / pan_cost are NULL until the owner sets them ("assumed").
+CREATE TABLE IF NOT EXISTS bins (
+  id TEXT PRIMARY KEY,
+  location_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  row_no INTEGER NOT NULL,
+  col_no INTEGER NOT NULL,
+  discard_at_close INTEGER,
+  pan_label TEXT,
+  pan_cost REAL,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+-- One open and one close check per day; confirming again replaces it.
+CREATE TABLE IF NOT EXISTS topping_checks (
+  id TEXT PRIMARY KEY,
+  location_id TEXT NOT NULL,
+  scenario TEXT NOT NULL DEFAULT 'live',
+  day TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  photo_id TEXT,
+  estimator TEXT,
+  model TEXT,
+  photo_usable INTEGER,
+  problems_json TEXT,
+  confirmed_at TEXT NOT NULL,
+  device_id TEXT
+);
+CREATE INDEX IF NOT EXISTS topping_checks_day ON topping_checks (location_id, scenario, day);
+-- outcome: accepted (kept the estimate), corrected (changed it), filled (staff set a "needs a look" bin), manual (no estimate)
+CREATE TABLE IF NOT EXISTS check_levels (
+  check_id TEXT NOT NULL,
+  location_id TEXT NOT NULL,
+  bin_id TEXT NOT NULL,
+  level REAL NOT NULL,
+  estimated_level REAL,
+  confidence TEXT,
+  visible INTEGER,
+  outcome TEXT NOT NULL,
+  PRIMARY KEY (check_id, bin_id)
+);
+CREATE TABLE IF NOT EXISTS refills (
+  id TEXT PRIMARY KEY,
+  location_id TEXT NOT NULL,
+  scenario TEXT NOT NULL DEFAULT 'live',
+  day TEXT NOT NULL,
+  bin_id TEXT NOT NULL,
+  amount REAL NOT NULL,
+  at_min INTEGER NOT NULL,
+  source TEXT NOT NULL,
+  device_id TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS refills_day ON refills (location_id, scenario, day);
+-- Downscaled JPEGs, only stored when the photo check passed (never with a person in frame).
+-- Deleted after the retention period; the confirmed numbers stay.
+CREATE TABLE IF NOT EXISTS photos (
+  id TEXT PRIMARY KEY,
+  location_id TEXT NOT NULL,
+  scenario TEXT NOT NULL DEFAULT 'live',
+  day TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  data BLOB NOT NULL,
+  width INTEGER,
+  height INTEGER,
+  bytes INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS photos_age ON photos (location_id, created_at);
 `;

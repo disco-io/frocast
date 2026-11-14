@@ -3,5 +3,11 @@
   "proxy": {
     "entrypoint": "middleware.js",
     "matcher": ["/", "/index.html", "/clock.html", "/toppings.html"]
-  }
+  },
+  "functions": {
+    "api/vision.js": { "maxDuration": 30 }
+  },
+  "crons": [
+    { "path": "/api/cron", "schedule": "0 8 * * *" }
+  ]
 }
