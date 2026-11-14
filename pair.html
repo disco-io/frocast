@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FroCast · set up this device</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍦</text></svg>">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .pairbox { max-width: 440px; margin: 40px auto 0; }
+    .pairbox input { font-size: 18px; padding: 14px; }
+    .pairbox .btn { font-size: 17px; padding: 14px 16px; min-height: 48px; }
+    .langbtn { font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 9px 14px; border-radius: 10px; cursor: pointer; min-height: 44px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">❄</div>
+      <div><h1>FroCast</h1><small>Froyo &amp; boba prep planner</small></div>
+    </div>
+    <button class="langbtn" id="lang" type="button">Español</button>
+  </header>
+  <div class="card pairbox">
+    <h2 data-t="pair.title">Set up this device</h2>
+    <p style="margin:0 0 16px;font-size:15px" data-t="pair.lead"></p>
+    <form class="log" id="pairForm">
+      <label><span data-t="pair.name">Name this device</span>
+        <input type="text" id="pName" maxlength="40" autocomplete="off" data-t-placeholder="pair.namePh"></label>
+      <label><span data-t="pair.pin">Owner PIN</span>
+        <input type="password" id="pPin" inputmode="numeric" autocomplete="off" required></label>
+      <button class="btn" type="submit" id="pGo" data-t="pair.go">Set up device</button>
+      <div class="toast" id="pMsg" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+</div>
+<script type="module" src="js/pair.js"></script>
+</body>
+</html>
