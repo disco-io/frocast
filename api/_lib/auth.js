@@ -38,7 +38,9 @@ export async function requireDevice(req) {
   return { id: row.id, name: row.name };
 }
 
+// With pairing off (local runs) the owner PIN is skipped too, so local setup screens open straight away.
 export async function requireOwner(req) {
+  if (!pairingOn()) return { location: LOCATION };
   const tok = await ownerFromCookie(req.headers.cookie);
   return tok && tok.location === LOCATION ? tok : null;
 }
