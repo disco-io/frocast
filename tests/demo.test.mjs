@@ -128,3 +128,22 @@ test("step 4: morning guidance from yesterday's usage", async () => {
   assert.equal(s.usedYesterday, y.open + y.refill - y.close);
   assert.ok(s.setOut >= s.usedYesterday && s.setOut % 0.5 === 0);
 });
+
+test("phone-camera test page: demo photo checks are logged (results only); live ones never are", async () => {
+  const { writeFileSync } = await import("node:fs");
+  const stubFile = path.join(tmpdir(), `frocast-demo-stub-${process.pid}.json`);
+  writeFileSync(stubFile, JSON.stringify({ photo_usable: true, problems: [], bins: [] }));
+  process.env.VISION_STUB = stubFile;
+  const img = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
+  await post("demo", { action: "reset" });
+  await post("vision", { scenario: "demo", day: NOV, kind: "close", image: img });
+  const { run } = await get("vision", { latest: 1 });
+  assert.equal(run.kind, "close");
+  assert.equal(run.result.available, true);
+  assert.equal(run.result.bins.length, DEMO_BINS.length);
+  await post("toppings", { action: "saveBin", bin: { name: "Live kiwi", row: 1, col: 2 } });
+  await post("vision", { kind: "close", image: img }); // live
+  assert.equal((await get("vision", { latest: 1 })).run.id, run.id, "live runs aren't logged");
+  delete process.env.VISION_STUB;
+  rmSync(stubFile, { force: true });
+});

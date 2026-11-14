@@ -18,6 +18,13 @@ export default async function handler(req, res) {
     if (!toppingsEnabled()) return sendError(res, 404, "Topping check is turned off");
     const device = await requireDevice(req);
     if (!device) return sendError(res, 401, "This device isn't paired");
+    // Latest demo-mode result (for the phone-camera test page in tools/testbar). Never live data.
+    if (req.method === "GET" && req.query?.latest) {
+      const db = await ready();
+      const r = await db.execute({ sql: "SELECT id, kind, result_json, created_at FROM vision_runs WHERE location_id = ? AND scenario = 'demo' ORDER BY created_at DESC LIMIT 1", args: [LOCATION] });
+      const row = r.rows[0];
+      return res.status(200).json({ run: row ? { id: row.id, kind: row.kind, createdAt: row.created_at, result: JSON.parse(row.result_json) } : null });
+    }
     if (req.method !== "POST") return sendError(res, 405, "Use POST");
     const { kind, image } = req.body || {};
     if (!["open", "close"].includes(kind)) return sendError(res, 400, "kind must be open or close");
@@ -29,8 +36,18 @@ export default async function handler(req, res) {
     const db = await ready();
     const scenario = req.body.scenario === "demo" ? "demo" : "live";
     const day = scenario === "demo" && isDay(req.body.day) ? req.body.day : shopNow().day;
+    // Demo-mode results (not photos) are kept for a day so the test page can score them.
+    const reply = async obj => {
+      if (scenario === "demo" && !sample) {
+        await db.batch([
+          { sql: "INSERT INTO vision_runs (id, location_id, scenario, kind, result_json, created_at) VALUES (?, ?, 'demo', ?, ?, ?)", args: [crypto.randomUUID(), LOCATION, kind, JSON.stringify(obj), now()] },
+          { sql: "DELETE FROM vision_runs WHERE location_id = ? AND created_at < ?", args: [LOCATION, new Date(Date.now() - 86400e3).toISOString()] }
+        ], "write").catch(err => console.error("vision log", err.message));
+      }
+      return res.status(200).json(obj);
+    };
     const bins = (await db.execute({ sql: "SELECT id, name, row_no, col_no FROM bins WHERE location_id = ? AND scenario = ? AND active = 1 ORDER BY row_no, col_no", args: [LOCATION, scenario] })).rows;
-    if (!bins.length) return res.status(200).json({ available: false, reason: "no_bins" });
+    if (!bins.length) return reply({ available: false, reason: "no_bins" });
     // Demo "sample photo": canned estimates for the placeholder pair (labeled simulated, never stored).
     if (scenario === "demo" && req.body.sample === true) {
       const canned = DEMO_ESTIMATES[kind] || {};
@@ -39,16 +56,16 @@ export default async function handler(req, res) {
         bins: bins.map(b => canned[b.name] ? { id: b.id, level: canned[b.name][0], confidence: canned[b.name][1], visible: true } : { id: b.id, level: 0, confidence: "low", visible: false })
       });
     }
-    if (!visionAvailable()) return res.status(200).json({ available: false, reason: "no_key" });
+    if (!visionAvailable()) return reply({ available: false, reason: "no_key" });
 
     let est;
     try {
       est = await estimateBins({ base64: photo.base64, mime: photo.mime, bins, kind });
     } catch (err) {
       console.error("vision", err.name, err.message);
-      return res.status(200).json({ available: false, reason: err.name === "APIConnectionTimeoutError" ? "timeout" : "error" });
+      return reply({ available: false, reason: err.name === "APIConnectionTimeoutError" ? "timeout" : "error" });
     }
-    if (est.unavailable) return res.status(200).json({ available: false, reason: est.reason });
+    if (est.unavailable) return reply({ available: false, reason: est.reason });
 
     // Keep only known bins and allowed values; anything missing becomes "needs a look".
     const byId = new Map((est.bins || []).map(b => [String(b.id), b]));
@@ -70,7 +87,7 @@ export default async function handler(req, res) {
       });
       await purgeOld(db);
     }
-    return res.status(200).json({ available: true, photo_usable: usable, problems, bins: out, photoId, model: est.model });
+    return reply({ available: true, photo_usable: usable, problems, bins: out, photoId, model: est.model });
   } catch (err) {
     console.error("vision", err);
     return res.status(200).json({ available: false, reason: "error" });

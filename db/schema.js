@@ -142,6 +142,15 @@ CREATE TABLE IF NOT EXISTS photos (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS photos_age ON photos (location_id, created_at);
+-- Demo-mode photo-check results (no photos), kept a day for the phone-camera test page.
+CREATE TABLE IF NOT EXISTS vision_runs (
+  id TEXT PRIMARY KEY,
+  location_id TEXT NOT NULL,
+  scenario TEXT NOT NULL,
+  kind TEXT,
+  result_json TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 -- Owner-approved suggestions (e.g. "try a smaller pan"). Approving never changes settings by itself.
 CREATE TABLE IF NOT EXISTS suggestions (
   id TEXT PRIMARY KEY,
