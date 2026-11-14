@@ -1,14 +1,14 @@
-# FreshBatch — Build Spec
+# Frocast — Build Spec
 
 > Fresh boba at the right time, for **Fruity Yogurt** (166 Nassau St, Princeton, NJ).
-> Repo: `disco-io/frocast` (public, created 2026-11-14). Product name in UI: **FreshBatch** (see Open Questions: naming).
+> Repo: `disco-io/frocast` (public, created 2026-11-14). Product name: **Frocast** (froyo + forecast; the brief's working name was FreshBatch).
 > Deadline: **8:00 AM Sun Nov 15, 2026** (hard). In-person judging 9:30 AM–2:30 PM; 2-minute demo at our table.
 
 ---
 
 ## 0. The one-paragraph pitch
 
-Fruity Yogurt cooks the same three full batches of boba every day, year-round, even when cold weather empties the store. Boba goes hard within hours, so on slow days most of it is thrown out, and the pearls customers do get are stale. FreshBatch forecasts customers per hour from weather, day of week and the Princeton calendar, then tells the counter **when to cook and how much** ("Cook a HALF batch at 2:40"). One tap at expiry ("How much was left?") becomes the shop's first waste log. Jenny gets a prep text before open, can text questions back, and can update the public site by text. Smaller batches at the right time fix both the waste problem and the quality problem.
+Fruity Yogurt cooks the same three full batches of boba every day, year-round, even when cold weather empties the store. Boba goes hard within hours, so on slow days most of it is thrown out, and the pearls customers do get are stale. Frocast forecasts customers per hour from weather, day of week and the Princeton calendar, then tells the counter **when to cook and how much** ("Cook a HALF batch at 2:40"). One tap at expiry ("How much was left?") becomes the shop's first waste log. Jenny gets a prep text before open, can text questions back, and can update the public site by text. Smaller batches at the right time fix both the waste problem and the quality problem.
 
 ---
 
@@ -16,11 +16,11 @@ Fruity Yogurt cooks the same three full batches of boba every day, year-round, e
 
 | Track | Type | What wins it for us | Demo emphasis |
 |---|---|---|---|
-| **Sustainability** (our one main track) | HackPrinceton main | Measured food waste avoided, with kg / CO₂e | Waste-avoided total, close-out camera |
+| **Sustainability** (our one main track) | HackPrinceton main | Measured food waste avoided, with kg / CO₂e | Waste-avoided total, close-out photo |
 | **Peri Forward Deployed** | Special | Real need, adoptable Monday, complete end to end | Interview quotes, "assumed" badges replaced by Jenny's real numbers, Monday adoption list |
 | **Photon messaging agent** | Special | Real two-way iMessage/WhatsApp agent | Prep text lands on a real phone; reply Q&A; "taro is out" → site updates |
 | **Amazon Practical AI** | Special | Agentic (reasons, plans, acts), adaptive, simple UX | Reply agent uses tools; leftover logs → "lower your margin?" suggestion |
-| **Hardware / Physical AI** | Special | AI in a physical build | Logitech webcam over prop topping bins → Claude vision → waste log |
+| ~~Hardware / Physical AI~~ | Special | **Dropped:** no hardware (D19). The close-out uses the phone camera | — |
 
 Main-track rubric (Creativity, Utility, Charity, Avidity) is covered by the same story.
 
@@ -49,16 +49,17 @@ Main-track rubric (Creativity, Utility, Charity, Avidity) is covered by the same
 | D13 | Waste unit | **Servings** headline; secondary **$** and **kg food / kg CO₂e**, each an assumed conversion |
 | D14 | Traceability | **Tap any number → "Why?" sheet** via a shared `<Traced>` component |
 | D15 | Demo day | **Contrast:** cold **Sat Nov 14, 2026** (Thanksgiving recess 10 days out) vs. warm **Sat Sep 5, 2026** (first weekend of term) |
-| D16 | Demo setup | **Stage page + real props.** Laptop `/demo` stage, a teammate's phone receives the real Photon text, webcam over prop topping cups |
+| D16 | Demo setup | **Stage page + real props.** Laptop `/demo` stage. A teammate's **paired phone** receives the real Photon text and photographs prop topping cups for the close-out |
 | D17 | Demo script | **Hybrid.** Off-stage events auto-fire; the presenter taps "Batch cooked" and the leftover answer live |
 | D18 | Prep text time | **8:00–9:00 AM ET window.** Two UTC crons + local-hour guard + send-once lock. Time is a Setting |
-| D19 | Hardware | **Real topping camera** (Logitech webcam + Claude vision). No other hardware |
+| D19 | Hardware | **None.** The close-out photo is taken with the phone's camera through a "Take photo" button in the web app: nothing to buy, mount or maintain, and it's what Jenny would realistically adopt. Hardware / Physical AI tracks dropped |
 | D20 | Revisit | **In person tonight, before 11 PM close**: field checklist in §13 |
 | D21 | Learning loop | **Suggest, owner approves**: leftover logs → one-tap margin suggestion |
-| D22 | Camera scope | **Close-out only, staff confirm.** Bins boxed once on a reference photo; manual fallback with no camera |
+| D22 | Close-out photo | **Close-out only, staff confirm.** 1–3 phone photos plus the bar's ordered bin list → Claude vision estimates → staff confirm. Manual taps when there's no photo |
 | D23 | Reply intent | **LLM routing + confirm.** Menu changes always echo back and need YES |
-| D24 | PIN | **Owner PIN for Settings only.** The batch clock is open with no PIN, so the counter tablet never locks |
+| D24 | Access | **Pair each device once** with the owner PIN (1-year signed cookie, revocable). Staff never type a PIN, and the counter tablet never locks. Unpaired visitors can't open staff pages, write data or trigger Claude calls. The owner PIN is still needed for Settings-level actions (§4.6) |
 | D25 | Cut list | **No pre-approved cuts.** If anything is at risk, Claude flags it to the user before cutting (per the brief) |
+| D26 | Name | **Frocast** (matches the repo), used in the UI, Devpost and pitch |
 
 ---
 
@@ -66,7 +67,7 @@ Main-track rubric (Creativity, Utility, Charity, Avidity) is covered by the same
 
 | Owner | Owns end to end | Depends on |
 |---|---|---|
-| **Claude** | M0 contracts + scaffold, DB schema, `Clock` abstraction, §5 Forecast, §6 Batch clock, §8 Demo mode, Settings/setup, `<Traced>` + assumed badges, i18n plumbing; then §10 Topping camera | — |
+| **Claude** | M0 contracts + scaffold, DB schema, `Clock` abstraction, §5 Forecast, §6 Batch clock, §8 Demo mode, Settings/setup, `<Traced>` + assumed badges, i18n plumbing, device pairing + access control; then §10 Close-out photo | — |
 | **Teammate A** | §7 Prep text + messaging (Photon, Twilio, Mock adapters), cron, reply agent / intent router, phone mockup component | `lib/contracts.ts`, `getPrepFacts()`, forecast query functions |
 | **Teammate B** | §9 Public site, menu data + seed file, `parseMenuChange` / `publishMenuChange`, staff flavor board (web fallback) | `lib/contracts.ts`, `Clock` (for "open now") |
 | **Whoever is free ~8–10 PM** | §13 Revisit to the shop (≤1 hour) | Printed or phone checklist |
@@ -96,7 +97,7 @@ interface Clock { now(): Date; scenarioId: ScenarioId; isDemo: boolean }
 type ScenarioId = 'live' | 'demo-nov14' | 'demo-sep05';
 ```
 - Live: real time, `scenarioId = 'live'`.
-- Demo: the simulated time and scenario come from the stage page's state (passed as params or cookie `fb_demo`). This is scoped to the demo session, so the real public site and real staff clock are never affected.
+- Demo: the simulated time and scenario come from the stage page's state (passed as params or cookie `fc_demo`). This is scoped to the demo session, so the real public site and real staff clock are never affected.
 
 ### 4.3 Data isolation
 Every domain table has a `scenario_id` column. Demo writes (batches, waste, messages) land in `demo-*` scenarios. A **Reset demo** button deletes all rows for that scenario. Live waste totals never include demo data.
@@ -108,6 +109,17 @@ Every domain table has a `scenario_id` column. Demo writes (batches, waste, mess
 
 ### 4.5 Feature flags (env, default off)
 `ORDER_AHEAD`, `TOPPING_CAMERA`. Plus `DEMO_OFFLINE=1`, which forces weather fixtures, the mock messaging provider, the stub vision result and template text, for when venue Wi-Fi (`puvisitor`) dies.
+
+### 4.6 Access control and spend (D24)
+The staff pages share a public deployment with the customer site, and the README/Devpost links are public. So:
+- **Device pairing:** `/staff/pair` → owner PIN → name the device ("Counter tablet", "Jenny's phone") → the server creates a `devices` row and sets the `fc_device` cookie (httpOnly, Secure, SameSite=Lax, 365 days) to `deviceId.HMAC(DEVICE_SECRET)`.
+- **`middleware.ts`** verifies the HMAC on `/staff/*` and on the staff write APIs (`/api/boba/*`, `/api/vision/*`, `/api/sales/*`, `/api/menu`). Unpaired page requests redirect to `/staff/pair`; unpaired API requests get 401. Route handlers also check `revoked_at` in the DB.
+- **Owner session** (PIN, 12-hour cookie) is required on top of pairing for Settings, CSV upload, the menu board, the bin list, suggestion approval and device management (Settings → Devices → Revoke).
+- **PIN attempts** are limited to 5 per 15 minutes per IP (`pin_attempts` table).
+- **Public surfaces** are the `(public)` routes (read-only) and `/demo`. On `/demo`, unpaired visitors write only to `demo-*` scenarios and **never trigger Claude**: prep text, replies and vision use templates and stub results, labeled "template". The team's paired table laptop and phone get live Claude.
+- **Spend backstop:** `LLM_DAILY_CALL_CAP` (env), counted in `llm_usage`. Past the cap, every path uses its deterministic fallback.
+- Inbound messaging webhooks use signature verification plus the owner allowlist (§7.1). The cron uses `CRON_SECRET`.
+- The README and Devpost link only the public site and `/demo`, never `/staff`.
 
 ---
 
@@ -197,7 +209,7 @@ Sources found during the interview: acadcalendar.com (Princeton 2026–27), Dail
 6. **Last-cook cutoff:** no cook prompt if `t_out` > close − `last_cook_cutoff_min` (config, default 45). Show "No more boba cooking today" instead.
 7. **State color:** GREEN when the next cook is more than 20 minutes away; AMBER at ≤ 20 minutes; RED when the cook time has passed, nothing fresh is left, or a batch has expired un-logged; GREY when closed or before the first cook. Thresholds live in config.
 
-### 6.3 Screen (`/staff/clock`, open with no PIN, tablet landscape, Wake Lock API to keep the screen on)
+### 6.3 Screen (`/staff/clock`, paired device, no PIN prompt, tablet landscape, Wake Lock API to keep the screen on)
 - Full-bleed state color. One giant line ("COOK A HALF BATCH AT 2:40" / "in 28 minutes"), sized to read from six feet away (instruction ≥ 72 px, secondary ≥ 32 px). Contrast is checked in all four state colors.
 - Secondary line: current batch age countdown and estimated servings left.
 - A thin 10a–11p day strip showing batches as blocks, plus a now-marker.
@@ -277,7 +289,7 @@ A `<PhoneMockup scenarioId>` component (an iMessage-style thread) polls `message
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 - **Time slider runs 8:00 AM → 11:00 PM** in 5-minute steps, with 8:00–10:00 shaded "pre-open" so the morning text can fire. *(The brief said 10 AM–11 PM; the slider starts earlier because the prep text must land before open.)* Play mode runs at 60× speed.
-- **The scenario toggle** switches between the Nov 14 and Sep 5 fixtures. A "compare" chip shows both days' plans side by side: the cold day cooks fewer and smaller batches than the habit (waste avoided), and on the warm day the habit **runs out** in the evening while FreshBatch adds a batch. One rule fixes both.
+- **The scenario toggle** switches between the Nov 14 and Sep 5 fixtures. A "compare" chip shows both days' plans side by side: the cold day cooks fewer and smaller batches than the habit (waste avoided), and on the warm day the habit **runs out** in the evening while Frocast adds a batch. One rule fixes both.
 
 ### 8.2 Deterministic replay (D17)
 - Demo state = `replay(scenarioScript, presenterEvents, t)`, a pure function. Scripted events (prep text at 8:30, opening batch at 9:15, forecast refresh) auto-fire as the slider passes them.
@@ -297,10 +309,10 @@ A `<PhoneMockup scenarioId>` component (an iMessage-style thread) polls `message
 | 0:35–1:05 | Drag: 8:30 prep text lands on the real phone → open → amber "Cook a HALF batch" → **tap** → drag to expiry → **"A quarter"** → waste avoided ticks up |
 | 1:05–1:20 | Toggle Sep 5: the warm-day plan cooks more; the habit would have run out |
 | 1:20–1:40 | Text "how busy is tonight?" → answer; "taro is out, chai is in" → YES → public site updates |
-| 1:40–1:55 | Webcam over prop bins → close-out estimates → confirm → waste log |
+| 1:40–1:55 | Paired phone → **Take photo** of the prop topping cups → close-out estimates → confirm → waste log |
 | 1:55–2:00 | Adopt Monday: enter 4 settings, put a tablet on the counter, save a phone number |
 
-Reorder per judge: the Photon judge sees messaging first, Hardware sees the camera first, Peri sees the interview evidence plus the Monday list.
+Reorder per judge: the Photon judge sees messaging first, Amazon sees the reply agent and the margin suggestion first, Peri sees the interview evidence plus the Monday list.
 
 **M3 done when:** the full script runs start to finish 3 times in a row with Wi-Fi off.
 
@@ -323,14 +335,16 @@ Reorder per judge: the Photon judge sees messaging first, Hardware sees the came
 
 ---
 
-## 10. Topping camera (`TOPPING_CAMERA`; Claude after M3)
+## 10. Close-out photo (`TOPPING_CAMERA` flag; Claude after M3)
 
-- **Interface:** `ToppingVision.estimate(image: Blob, bins: Bin[]) → BinEstimate[]` (`level: none|quarter|half|most`, `confidence`). Implementations: `ClaudeVisionProvider` (Opus 5.5, image as base64, structured output) and `StubVisionProvider` (fixture).
-- **Calibration** (`/staff/camera/setup`, owner PIN): capture a reference frame via `getUserMedia` (Logitech webcam on the laptop), drag boxes over each bin, and name each one (linked to a menu topping).
-- **Close-out** (`/staff/close-out`): capture → draw numbered boxes onto the frame before sending (more reliable than asking the model to find bins) → estimates → **staff confirm/correct screen** (one tile per bin with 4-way tap buttons) → save to `waste_log` (`source: camera_confirmed`). Waste servings = level × `servings_per_bin` (Setting, assumed).
-- **No camera:** the same screen with manual taps per bin, so it is useful Monday either way.
-- **Demo prop:** 4–6 clear cups of colored toppings at different fill levels on the table.
-- Risk: a webcam alone may read as light hardware for Physical AI. If time allows, mount it on a little stand built from MLH parts. Don't spend more than 30 minutes on that.
+**No hardware.** Staff take the photo on a paired phone in the web app. There is nothing to buy, mount or maintain, and it works on the phone Jenny already has.
+
+- **Capture:** `/staff/close-out` has a big **Take photo** button, implemented as `<input type="file" accept="image/*" capture="environment">`. It opens the rear camera in iOS and Android browsers (a file picker on desktop). Allow 1–3 photos for a long bar. Downscale on a canvas in the browser to ≤ 1600 px JPEG (~300 KB) before upload, well under Vercel's request-body limit.
+- **Bin list** (`/staff/settings/bins`, owner PIN): the topping bar's bins in left-to-right order, each with row, position, label, linked menu topping and optional `servings_per_bin` override. **No drawn boxes:** a handheld phone frames the bar differently every night, so fixed boxes wouldn't line up.
+- **Interface:** `ToppingVision.estimate(images: Blob[], bins: Bin[]) → BinEstimate[]` (`bin_id`, `level: none|quarter|half|most`, `confidence`, `not_visible`). Implementations: `ClaudeVisionProvider` (Opus 5.5, base64 images plus the ordered bin list, structured output) and `StubVisionProvider` (fixture).
+- **Confirm screen:** one tile per bin with the estimate preselected on four tap buttons (none / ¼ / ½ / most). Bins marked `not_visible` or low-confidence are highlighted for staff to set. **Save to waste log** (`source: camera_confirmed`). Waste servings = level × `servings_per_bin` (Setting, assumed).
+- **No photo:** the same confirm screen with manual taps (`source: manual`), so it's useful on Monday either way.
+- **Demo prop:** 4–6 clear cups of colored toppings at different fill levels. The presenter photographs them with the paired phone. Offline: stub result.
 
 ---
 
@@ -356,8 +370,8 @@ Reorder per judge: the Photon judge sees messaging first, Hardware sees the came
 - Setup wizard: the 4 brief fields first (batch size, lead time, freshness, batches/day), then "more (optional)".
 - **Every placeholder shows an "assumed, tap to set" badge** that deep-links to its field. Saving a field sets `is_assumed = false`, even if the value is unchanged (the owner confirmed it).
 
-### 11.2 PIN (D24)
-The batch clock, dashboard and close-out are open. The owner PIN guards Settings, CSV upload, the menu board, camera calibration and suggestion approval. The PIN hash lives in settings and is seeded from the `OWNER_PIN` env. The session cookie lasts 12 hours.
+### 11.2 PIN and pairing (D24)
+See §4.6. Day to day, a paired device opens the batch clock, dashboard and close-out with no PIN prompt. The owner PIN pairs devices and guards Settings, CSV upload, the menu board, the bin list, suggestion approval and device management. The PIN hash lives in settings and is seeded from the `OWNER_PIN` env (the README says to change it at setup). The owner session lasts 12 hours.
 
 ### 11.3 i18n (D11)
 `lib/i18n/strings.ts` with `en` and `es` dictionaries; all staff-screen strings go through `t()`. The toggle is stored in localStorage (wrapped in try/catch; defaults to `en`). Spanish strings are machine-drafted with `reviewed: false` until a Spanish speaker checks them (ask at the revisit). Prep texts to Jenny stay English.
@@ -391,7 +405,8 @@ Bring the phone with the deployed app (or screenshots). **Ask permission before 
 **Fruit and toppings**
 - [ ] How many fruit trays per day, and about how many servings per tray?
 - [ ] Who preps, and what time does the opener arrive? (→ prep text hour)
-- [ ] How many topping bins? Rough servings per bin
+- [ ] Topping bar: list the bins left to right (→ bin list) and rough servings per bin
+- [ ] If they allow it, take a test close-out photo of the bar near close (→ a real test image for vision)
 
 **Operations**
 - [ ] Register/POS brand. Can it export sales? (photo of the export screen if possible)
@@ -421,7 +436,7 @@ All domain tables carry `scenario_id TEXT NOT NULL DEFAULT 'live'`. Timestamps a
 | `settings` | `key PK`, `value_json`, `is_assumed`, `updated_at` |
 | `batches` | `id`, `scenario_id`, `ready_at`, `expires_at`, `size_fraction` (0.25/0.5/0.75/1), `servings`, `recommended_fraction`, `source` (`staff\|demo_script\|demo_auto\|order`), `status` (`active\|expired\|dumped`), `leftover_fraction`, `leftover_logged_at` |
 | `batch_events` | `id`, `scenario_id`, `at`, `type` (`running_low\|prompt_shown\|prompt_acted`), `batch_id`, `payload_json` |
-| `waste_log` | `id`, `scenario_id`, `at`, `item_type` (`boba\|topping`), `item_key`, `leftover_fraction`, `leftover_servings`, `source` (`staff\|camera_confirmed\|manual`), `batch_id?`, `snapshot_id?` |
+| `waste_log` | `id`, `scenario_id`, `at`, `item_type` (`boba\|topping`), `item_key`, `leftover_fraction`, `leftover_servings`, `source` (`staff\|camera_confirmed\|manual`), `batch_id?`, `photo_id?` |
 | `weather_cache` | `key PK` (lat,lon,date-range), `fetched_at`, `payload_json`, `origin` (`live\|archive\|fixture`) |
 | `sales_uploads` | `id`, `uploaded_at`, `filename`, `column_map_json`, `item_map_json`, `row_count`, `date_from`, `date_to` |
 | `sales_hourly` | `upload_id`, `local_date`, `hour`, `category`, `orders`, `boba_items` |
@@ -431,8 +446,11 @@ All domain tables carry `scenario_id TEXT NOT NULL DEFAULT 'live'`. Timestamps a
 | `menu_items` | `id`, `category` (`froyo\|tea\|topping\|fruit`), `name`, `description?`, `price_cents?`, `available`, `on_tap_today`, `verified`, `sort` |
 | `menu_changes` | `id`, `at`, `ops_json`, `source` (`sms\|web`), `pending_action_id?` |
 | `suggestions` | `id`, `created_at`, `setting_key`, `current_json`, `proposed_json`, `evidence_json`, `status` |
-| `topping_bins` | `id`, `label`, `bbox_json`, `menu_item_id?`, `active` |
-| `topping_snapshots` | `id`, `scenario_id`, `at`, `image_data_url` (downscaled ≤ 200 KB), `estimates_json`, `confirmed_at?` |
+| `topping_bins` | `id`, `row`, `position`, `label`, `menu_item_id?`, `servings_per_bin?`, `active` |
+| `closeout_photos` | `id`, `scenario_id`, `at`, `images_json` (≤ 3 downscaled data URLs), `estimates_json`, `estimator` (`claude\|stub`), `confirmed_at?` |
+| `devices` | `id`, `name`, `created_at`, `last_seen_at`, `revoked_at?` |
+| `pin_attempts` | `ip_hash`, `at`, `ok` |
+| `llm_usage` | `local_date PK`, `calls`, `input_tokens`, `output_tokens` |
 | `orders` *(ORDER_AHEAD)* | `id`, `pickup_at`, `items_json`, `name`, `status`. Feeds the planner as known demand |
 
 ---
@@ -441,10 +459,11 @@ All domain tables carry `scenario_id TEXT NOT NULL DEFAULT 'live'`. Timestamps a
 
 ```
 frocast/
-├─ .plans/freshbatch-spec.md            ← this file
+├─ .plans/frocast-spec.md            ← this file
 ├─ README.md                             problem · interview findings · run · real vs simulated · Monday adoption · Peri block
 ├─ docs/interview-notes.md               revisit answers + evidence refs
 ├─ vercel.json                           crons (12:00, 13:00 UTC)
+├─ middleware.ts                         device-cookie gate for /staff/* + staff write APIs
 ├─ drizzle.config.ts · drizzle/          migrations
 ├─ config/
 │  └─ forecast.config.ts                 ALL model knobs (value, source, assumed)
@@ -464,7 +483,8 @@ frocast/
 │  ├─ forecast/{index.ts, baseline.ts, fitted.ts, reasons.ts, calendar.ts}
 │  ├─ boba/{planner.ts, waste.ts, suggestions.ts}
 │  ├─ sales/{parseCsv.ts, aggregate.ts, refit.ts}
-│  ├─ llm/{client.ts, validateTokens.ts, fillTokens.ts}
+│  ├─ auth/{device.ts, owner.ts, pinLimit.ts}
+│  ├─ llm/{client.ts, validateTokens.ts, fillTokens.ts, budget.ts}
 │  ├─ messaging/{index.ts, photon.ts, twilio.ts, mock.ts}          (A)
 │  ├─ prep/{facts.ts (Claude), compose.ts (A), templates/}          
 │  ├─ agent/{router.ts, tools.ts}                                   (A)
@@ -481,11 +501,13 @@ frocast/
 ├─ app/
 │  ├─ (public)/page.tsx · (public)/menu/page.tsx                    (B)
 │  ├─ staff/page.tsx                     dashboard
-│  ├─ staff/clock/page.tsx               hero, open, no PIN
+│  ├─ staff/pair/page.tsx                owner PIN → pair this device
+│  ├─ staff/clock/page.tsx               hero, paired device, no PIN prompt
 │  ├─ staff/setup/page.tsx · staff/settings/{page.tsx, sales/page.tsx}
 │  ├─ staff/menu/page.tsx                                           (B)
 │  ├─ staff/messages/page.tsx                                       (A)
-│  ├─ staff/close-out/page.tsx · staff/camera/setup/page.tsx
+│  ├─ staff/close-out/page.tsx           "Take photo" (phone camera) → confirm
+│  ├─ staff/settings/{bins,devices}/page.tsx
 │  ├─ demo/page.tsx                      stage
 │  └─ api/
 │     ├─ forecast/route.ts · boba/{state,cooked,running-low,leftover}/route.ts
@@ -497,7 +519,7 @@ frocast/
 └─ tests/  (vitest)  forecast · planner · waste · validateTokens · parseChange · replay
 ```
 
-Env vars: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `LLM_MODEL`, `MESSAGING_PROVIDER`, `PHOTON_*`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `OWNER_PIN`, `CRON_SECRET`, `DEMO_PHONE`, `DEMO_OFFLINE`, `ORDER_AHEAD`, `TOPPING_CAMERA`. Commit `.env.example`; never commit secrets.
+Env vars: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ANTHROPIC_API_KEY`, `LLM_MODEL`, `MESSAGING_PROVIDER`, `PHOTON_*`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `OWNER_PIN`, `DEVICE_SECRET`, `LLM_DAILY_CALL_CAP`, `CRON_SECRET`, `DEMO_PHONE`, `DEMO_OFFLINE`, `ORDER_AHEAD`, `TOPPING_CAMERA`. Commit `.env.example`; never commit secrets.
 
 ---
 
@@ -507,19 +529,19 @@ Times are targets; slip → tell the user, don't silently cut.
 
 | Milestone | Owner | Exit criteria | Target |
 |---|---|---|---|
-| **M0** Scaffold + contracts | Claude | Next app on Vercel + Turso, schema migrated, `contracts.ts`, `Clock`, fixtures, `.env.example`, empty route stubs | first ~1.5 h |
+| **M0** Scaffold + contracts | Claude | Next app on Vercel + Turso, schema migrated, `contracts.ts`, `Clock`, device pairing + `middleware.ts`, fixtures, `.env.example`, empty route stubs | first ~1.5 h |
 | **M1** Forecast | Claude | §5 done criteria | +3 h |
 | **M2** Batch clock | Claude | §6 done criteria | +3 h |
 | **M3** Demo mode | Claude | §8 done criteria (Wi-Fi off ×3) | +2 h |
 | **M4** Prep text + replies | A (parallel from M0) | §7 done criteria | parallel |
 | **M5** Public site + menu by text | B (parallel from M0) | §9 done criteria | parallel |
 | **Revisit** | free teammate | §13 checklist complete, values in Settings | **before 10:30 PM** |
-| **M6** Topping camera | Claude | §10 with real webcam + stub fallback | after M3 |
+| **M6** Close-out photo | Claude | §10 on a real phone + stub fallback | after M3 |
 | **M7** README, Devpost, video | all | README sections per brief, Peri block, Discord names, ≤2 min video uploaded | 5:00–7:00 AM |
 | **Freeze** | all | No features after **5:00 AM**; fixes only | 5:00 AM |
 | **Submit** | user | Devpost submitted with repo link | **by 7:30 AM** |
 
-**Priority if behind (nothing is pre-approved to cut):** M0 → M1 → M2 → M3 are the spine. Next comes the M4 prep text (template-only text is acceptable before the LLM version), then the M5 site and menu-by-text, then M6 camera, then Twilio, the refit math, ORDER_AHEAD, and full Spanish copy. Claude raises any at-risk item with the user before cutting it.
+**Priority if behind (nothing is pre-approved to cut):** M0 → M1 → M2 → M3 are the spine. Next comes the M4 prep text (template-only text is acceptable before the LLM version), then the M5 site and menu-by-text, then M6 close-out photo, then Twilio, the refit math, ORDER_AHEAD, and full Spanish copy. Claude raises any at-risk item with the user before cutting it.
 
 ---
 
@@ -527,10 +549,10 @@ Times are targets; slip → tell the user, don't silently cut.
 
 1. Problem: stale boba = waste + quality; no forecasting, no waste tracking
 2. Interview findings (Jenny Chen, Owner), with quotes and evidence
-3. What FreshBatch does (screens, with screenshots)
+3. What Frocast does (screens, with screenshots)
 4. How to run it (local + deploy, env vars, `DEMO_OFFLINE`)
 5. **Real vs. simulated vs. assumed** table (weather = real; calendar = real, cited; baseline factors = assumed; settings = owner-entered or assumed; demo days = simulated staff actions on real weather)
-6. **Adopt on Monday:** enter 4 settings, put the clock on a counter tablet, add Jenny's number, optionally upload a register CSV, point the domain at Vercel
+6. **Adopt on Monday:** enter 4 settings, pair the counter tablet once with the PIN and leave the clock open on it, add Jenny's number, optionally upload a register CSV, point the domain at Vercel
 7. Architecture + swappable interfaces (forecast model, messaging provider, vision provider)
 8. Tracks entered + team + Discord usernames
 
@@ -538,9 +560,9 @@ Times are targets; slip → tell the user, don't silently cut.
 
 ## 18. Open questions and risks
 
-- **Naming:** the repo is `frocast` but the brief says FreshBatch. Pick one for the UI, Devpost and pitch before M7 (the spec uses FreshBatch).
+- **Naming:** resolved: **Frocast** (D26).
 - **Photon SDK unknowns:** the 90-minute timebox applies (§7.1). Monday adoption depends on Jenny's messaging app (revisit).
-- **Physical AI eligibility:** webcam + vision may be judged light hardware (§10).
+- **Hardware / Physical AI tracks are dropped** (D19). Getting them back would take a real hardware build; the phone photo doesn't count.
 - **Calendar dates:** fall-term start is inferred, and one football date (Oct 31) is low confidence. Verify before the demo.
 - **Nov 14 weather:** capture the fixture tonight (the archive lags by days).
 - **Baseline factors are guesses until the revisit:** say so plainly in the README and UI ("Estimate", assumed badges).
