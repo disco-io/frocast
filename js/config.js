@@ -82,7 +82,7 @@ export const WHEN = {
 };
 
 // No hardcoded events: they are read from these sources by "Sync" (feeds are parsed, web pages are read by AI).
-// hint "athletics" keeps home games only. Add or remove sources on the Events tab.
+// hint "athletics" keeps home games only. Add sources here; a source can be removed on the Events tab.
 export const DEFAULT_SOURCES = [
   { id: "athletics", name: "Princeton Athletics", url: "https://goprincetontigers.com/calendar.ashx/calendar.ics", hint: "athletics" },
   { id: "palmer", name: "Palmer Square events", url: "https://palmersquare.com/events/?ical=1", hint: "town" },
@@ -97,9 +97,13 @@ export const FIXED_EVENTS = [
 ];
 
 // Put the fixed events first and drop any saved copy of them (older versions saved HackPrinceton as a normal event)
+// Game names without poll rankings: "Men's Ice Hockey vs No. 11/11 Dartmouth" -> "Men's Ice Hockey vs Dartmouth"
+export const noRank = label => String(label ?? "").replace(/(?:\bNo\.|#)\s*\d+(?:\/\d+)?\s+/gi, "");
+
 export const withFixed = list => [
   ...FIXED_EVENTS.map(e => ({ ...e, fixed: true })),
   ...list.filter(e => !e.fixed && !FIXED_EVENTS.some(f => f.id === e.id || (f.from === e.from && f.label.toLowerCase() === e.label.toLowerCase())))
+    .map(e => (e.type === "athletics" ? { ...e, label: noRank(e.label) } : e))   // also cleans games saved before this rule
 ];
 
 // What a screen uses before any events are saved or synced

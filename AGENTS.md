@@ -58,6 +58,7 @@ js/shape.js         hourly shape from the cached BestTime forecast (relative bus
 js/weather.js       live forecast (Open-Meteo), sample fallback
 js/align.js         photo line-up check: is the camera on the same spot as an earlier photo (shift, distance, move hints)
 js/store.js         saves data in the browser (localStorage)
+js/agentation.js    developer-only feedback toolbar, off unless you add ?agentation=1 on localhost
 js/app.js           rendering and UI events
 api/events.js       Vercel-style function: AI pulls events out of pasted calendar text
 api/sync.js         reads every calendar source (feeds + web pages) and returns dated events

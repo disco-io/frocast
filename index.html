@@ -13,7 +13,7 @@
   <header>
     <div class="brand">
       <div class="logo">❄</div>
-      <div><h1>FroCast</h1><small>Froyo &amp; boba prep planner · built with a Nassau St froyo shop</small></div>
+      <div><h1>FroCast</h1><small>Froyo &amp; Boba Planner built with Fruity Yogurt</small></div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <div class="sample" id="wxBadge">Loading weather…</div>
@@ -43,7 +43,6 @@
           <div class="whyline" id="whyLine"></div>
           <div class="why" id="why"></div>
           <div class="formula" id="formula"></div>
-          <div class="formula" id="totalNote"></div>
         </div>
         <div class="card">
           <h2>Customers by hour</h2>
@@ -84,12 +83,6 @@
       <h2>Calendar sources · updated automatically</h2>
       <table id="srcTable"></table>
       <div class="toast" id="syncMsg" style="margin-top:10px"></div>
-      <form class="src-add" id="srcForm">
-        <label>Name <input type="text" id="sName" placeholder="e.g. HackPrinceton"></label>
-        <label>Link to a calendar feed (.ics) or any page that lists dates <input type="text" id="sUrl" placeholder="https://…" required></label>
-        <label>Type <select id="sHint"><option value="">General</option><option value="athletics">Athletics (home games only)</option><option value="academic">Academic calendar</option></select></label>
-        <button class="btn" type="submit">Add source</button>
-      </form>
     </div>
     <div class="grid">
       <div class="card">
@@ -143,10 +136,6 @@
           <h2 id="wasteTitle">Boba thrown out per day (batches)</h2>
           <svg class="chart" id="wasteChart" viewBox="0 0 520 200"></svg>
           <div class="legend"><span><span class="sw" style="background:var(--red)"></span>Before FroCast</span><span><span class="sw" style="background:var(--mint)"></span>With FroCast</span></div>
-        </div>
-        <div class="card">
-          <h2>How accurate is the forecast?</h2>
-          <div id="acc" style="font-size:14px"></div>
           <div class="row-actions"><button class="btn ghost" id="clearSample" type="button">Hide sample history</button></div>
         </div>
       </div>
@@ -169,5 +158,6 @@
 
 <script type="module" src="js/app.js"></script>
 <script type="module" src="js/flags.js"></script>
+<script type="module" src="js/agentation.js"></script>
 </body>
 </html>

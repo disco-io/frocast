@@ -401,12 +401,11 @@ function renderNegatives() {
 }
 
 function renderUsage() {
-  if (!S.data.checks.close) { $("usageBox").innerHTML = ""; return; }
-  $("usageBox").innerHTML = `<h2>${esc(tk("top.usage"))}</h2>` + bins().map(b => {
-    const u = S.data.usage.find(x => x.binId === b.id);
-    const val = u?.used == null ? t("top.usageNeedsOpen") : pansText(u.used);
-    return `<button type="button" data-why="${esc(b.id)}"><span>${esc(b.name)}</span><b>${esc(val)}</b></button>`;
-  }).join("");
+  // Only bins with a number are listed (usage needs both the open and the close check).
+  // With none, the whole "Used today" block stays hidden.
+  const rows = S.data.checks.close ? bins().map(b => ({ b, u: S.data.usage.find(x => x.binId === b.id) })).filter(x => x.u?.used != null) : [];
+  $("usageBox").innerHTML = rows.length ? `<h2>${esc(tk("top.usage"))}</h2>` + rows.map(({ b, u }) =>
+    `<button type="button" data-why="${esc(b.id)}"><span>${esc(b.name)}</span><b>${esc(pansText(u.used))}</b></button>`).join("") : "";
   $("usageBox").querySelectorAll("[data-why]").forEach(btn => btn.addEventListener("click", () => openWhy(btn.dataset.why)));
 }
 

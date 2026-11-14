@@ -54,6 +54,14 @@ nav button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 .saved { margin-top: 8px; font-size: 13px; font-weight: 600; color: #8f2c52; }
 
 .chart { width: 100%; height: auto; display: block; }
+/* Hourly chart: the hour under the pointer stays bright and a small card shows its froyo and tea */
+#hourly { overflow: visible; }
+#hourly .hr { transition: opacity .18s ease; }
+#hourly.hovering .hr { opacity: .35; }
+#hourly.hovering .hr.on { opacity: 1; }
+.hour-tip { opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .22s cubic-bezier(.2, .8, .2, 1); filter: drop-shadow(0 4px 8px rgba(15, 18, 26, .25)); }
+.hour-tip.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #hourly .hr, .hour-tip { transition: none; } }
 .legend { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 
@@ -63,7 +71,9 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); }
 th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
 td.n { font-variant-numeric: tabular-nums; }
-.pill { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 99px; }
+/* A tag is one box: if it doesn't fit beside the last one, the whole tag moves to the next line.
+   Only a tag wider than its whole cell wraps, and then inside its own box. */
+.pill { display: inline-block; max-width: 100%; vertical-align: middle; margin: 2px 0; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 12px; }
 .pill.brk { background: var(--blueSoft); color: var(--blue); }
 .pill.ev { background: var(--amberSoft); color: #8a5a07; }
 
@@ -84,9 +94,6 @@ input[type=number], input[type=text], input[type=date], select { font: inherit; 
 textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; width: 100%; }
 td.nowrap { white-space: nowrap; }
 
-.src-add { display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 10px; align-items: end; margin-top: 16px; }
-.src-add label { font-weight: 600; font-size: 13px; display: grid; gap: 5px; }
-@media (max-width: 860px) { .src-add { grid-template-columns: 1fr; } }
 a { color: var(--blue); }
 .backup { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e8b9ca; font-size: 13px; color: #6b2342; }
 
@@ -102,5 +109,4 @@ a { color: var(--blue); }
 .whyline { font-size: 15px; font-weight: 600; margin: 4px 0 12px; }
 
 .assumed { font: inherit; font-size: 11px; font-weight: 700; background: var(--amberSoft); color: #8a5a07; border: none; border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
-button.assumed { cursor: pointer; text-decoration: underline dotted; }
 .src { font-size: 12px; color: var(--muted); margin-top: 8px; }

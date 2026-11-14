@@ -82,15 +82,13 @@ function renderToday() {
   $("whyLine").textContent = whyLine(day, fc, st.events);
   const cls = m => (m < 0.99 ? "down" : m > 1.01 ? "up" : "flat");
   $("why").innerHTML = fc.factors.map(x => {
-    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)} ${totalBadge(dow)}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
+    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)}${st.s.baseSet[dow] ? "" : " · assumed"}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
     if (x.m === undefined) return `<div class="row"><span>${esc(x.label)}</span><span><span class="x ${cls(x.mf)}">froyo ×${x.mf.toFixed(2)}</span> · <span class="x ${cls(x.mt)}">tea ×${x.mt.toFixed(2)}</span></span></div>`;
     return `<div class="row"><span>${esc(x.label)}</span><span class="x ${cls(x.m)}">×${x.m.toFixed(2)}</span></div>`;
   }).join("");
   const chain = key => fc.factors.slice(1).map(x => "× " + (x[key] ?? x.m).toFixed(2)).join(" ");
   const [b0] = fc.factors;
   $("formula").textContent = `Froyo ${Math.round(b0.froyo)} ${chain("mf")} ≈ ${fc.froyo} · Tea ${Math.round(b0.tea)} ${chain("mt")} ≈ ${fc.tea} → ${fc.customers} customers`;
-  $("totalNote").textContent = st.s.baseSet[dow] ? ""
-    : `The typical ${dow} total (${fc.base}) is an illustrative figure from franchise benchmarks, not this shop's data.`;
 
   const bp = bobaPlan(fc, day, st.events, st.s, st.shape);
   const fp = fruitPlan(fc, st.s);
@@ -117,10 +115,6 @@ function renderToday() {
   renderShape(day, fc);
 }
 
-// Daily totals the owner hasn't set are illustrative placeholders, and say so
-const totalBadge = dow => (st.s.baseSet[dow] ? ""
-  : `<button class="assumed" type="button" data-set="${dow}" title="Illustrative figure from franchise benchmarks, not this shop's data">assumed, tap to set</button>`);
-
 // Where the hourly numbers come from, and the "Why?" for any one hour
 function renderShape(day, fc) {
   const dow = DOW[day.date.getDay()];
@@ -137,7 +131,9 @@ function renderShape(day, fc) {
   }));
 }
 
-// Stacked bars: froyo (pink) at the bottom, tea (blue) on top, 2px gap between
+// Stacked bars: froyo (pink) at the bottom, tea (blue) on top, 2px gap between.
+// Pointing at an hour shows a small card with that hour's froyo and tea.
+let tipTimer = null;
 function drawHourly(hf, ht, batches) {
   const tot = hf.map((f, i) => f + ht[i]);
   const max = Math.max(...tot, 1);
@@ -149,8 +145,8 @@ function drawHourly(hf, ht, batches) {
   });
   hf.forEach((c, i) => {
     const hF = (c / max) * (H - B - 20), hT = (ht[i] / max) * (H - B - 20), x = L + i * bw + 4;
-    svg += `<rect x="${x}" y="${H - B - hF}" width="${bw - 8}" height="${hF}" fill="var(--pink)"><title>${fmtH(HOURS[i])}: ${Math.round(c)} froyo</title></rect>`;
-    svg += `<rect x="${x}" y="${H - B - hF - 2 - hT}" width="${bw - 8}" height="${Math.max(hT, 0)}" rx="4" fill="var(--blue)"><title>${fmtH(HOURS[i])}: ${Math.round(ht[i])} tea</title></rect>`;
+    svg += `<g class="hr" data-col="${i}"><rect x="${x}" y="${H - B - hF}" width="${bw - 8}" height="${hF}" fill="var(--pink)"><title>${fmtH(HOURS[i])}: ${Math.round(c)} froyo</title></rect>`;
+    svg += `<rect x="${x}" y="${H - B - hF - 2 - hT}" width="${bw - 8}" height="${Math.max(hT, 0)}" rx="4" fill="var(--blue)"><title>${fmtH(HOURS[i])}: ${Math.round(ht[i])} tea</title></rect></g>`;
     if (i % 2 === 0) svg += `<text x="${x + (bw - 8) / 2}" y="${H - 8}" font-size="10" fill="#888" text-anchor="middle">${fmtH(HOURS[i]).replace(":00", "")}</text>`;
   });
   batches.forEach(b => {
@@ -159,9 +155,38 @@ function drawHourly(hf, ht, batches) {
   });
   // One tap target per hour, on top of the bars, for the "Why?" line (renderShape)
   HOURS.forEach((h, i) => {
-    svg += `<rect data-h="${i}" x="${L + i * bw}" y="20" width="${bw}" height="${H - B - 20}" fill="transparent" style="cursor:pointer"><title>${fmtH(h)}: ${Math.round(hf[i])} froyo · ${Math.round(ht[i])} tea</title></rect>`;
+    svg += `<rect data-h="${i}" x="${L + i * bw}" y="20" width="${bw}" height="${H - B - 20}" fill="transparent" style="cursor:pointer" role="img" aria-label="${fmtH(h)}: ${Math.round(hf[i])} froyo, ${Math.round(ht[i])} tea"></rect>`;
   });
-  $("hourly").innerHTML = svg;
+  const TW = 104, TH = 54; // hover card, in the chart's own units
+  svg += `<g id="hourTip" class="hour-tip" aria-hidden="true"><rect width="${TW}" height="${TH}" rx="8" fill="var(--ink)"/>` +
+    `<text id="tipHour" x="10" y="17" font-size="11" font-weight="700" fill="#fff"></text>` +
+    `<circle cx="14" cy="29" r="4" fill="var(--pink)"/><text id="tipFroyo" x="24" y="33" font-size="11.5" fill="#fff"></text>` +
+    `<circle cx="14" cy="43" r="4" fill="var(--blue)"/><text id="tipTea" x="24" y="47" font-size="11.5" fill="#fff"></text></g>`;
+  const chart = $("hourly");
+  chart.innerHTML = svg;
+  const tip = $("hourTip");
+  const show = i => {
+    clearTimeout(tipTimer);
+    $("tipHour").textContent = fmtH(HOURS[i]);
+    $("tipFroyo").textContent = `${Math.round(hf[i])} froyo`;
+    $("tipTea").textContent = `${Math.round(ht[i])} tea`;
+    const x = Math.max(L, Math.min(W - 10 - TW, L + i * bw + bw / 2 - TW / 2));
+    const y = H - B - (tot[i] / max) * (H - B - 20) - TH - 10; // just above that hour's bar
+    if (!tip.classList.contains("on")) { // first appearance: fade in at the spot instead of flying in
+      tip.style.transition = "none";
+      tip.style.transform = `translate(${x}px, ${y + 6}px)`;
+      tip.getBoundingClientRect();
+      tip.style.transition = "";
+    }
+    tip.style.transform = `translate(${x}px, ${y}px)`;
+    tip.classList.add("on");
+    chart.classList.add("hovering");
+    chart.querySelectorAll(".hr").forEach(g => g.classList.toggle("on", +g.dataset.col === i));
+  };
+  const hide = () => { tip.classList.remove("on"); chart.classList.remove("hovering"); };
+  chart.querySelectorAll("[data-h]").forEach(r => r.addEventListener("pointerenter", () => show(+r.dataset.h)));
+  // A finger leaves as soon as it lifts, so keep the card up a moment on touch screens
+  chart.onpointerleave = e => { clearTimeout(tipTimer); tipTimer = setTimeout(hide, e.pointerType === "mouse" ? 0 : 2500); };
 }
 
 // ---------------- Outlook ----------------
@@ -293,18 +318,6 @@ async function syncAll() {
   }
 }
 
-function initSources() {
-  $("srcForm").addEventListener("submit", e => {
-    e.preventDefault();
-    const url = $("sUrl").value.trim();
-    if (!/^https?:\/\//.test(url)) { say($("syncMsg"), "The link must start with http:// or https://", "red"); return; }
-    st.sources.push({ id: "s" + Date.now().toString(36), name: $("sName").value.trim() || new URL(url).hostname, url, hint: $("sHint").value });
-    $("sName").value = $("sUrl").value = "";
-    changed();
-    syncAll();
-  });
-}
-
 function initEventForms() {
   $("eType").innerHTML = Object.entries(TYPES).map(([k, t]) => `<option value="${k}">${t.icon} ${t.name}</option>`).join("");
   $("eWhen").innerHTML = Object.entries(WHEN).map(([k, w]) => `<option value="${k}">${w.name}</option>`).join("");
@@ -385,7 +398,7 @@ function allLogs() {
 function renderLog() {
   const rows = allLogs().slice(-14);
   const hasSample = rows.some(r => r.sample);
-  $("wasteTitle").textContent = `Boba thrown out per day (batches)${hasSample ? " · includes sample history" : ""}`;
+  $("wasteTitle").textContent = `Boba thrown out per day (batches)${hasSample ? " · faded bars are sample history" : ""}`;
   $("clearSample").textContent = st.showSample ? "Hide sample history" : "Show sample history";
 
   const W = 520, H = 200, L = 30, B = 30, bw = (W - L - 10) / Math.max(rows.length, 1);
@@ -402,24 +415,6 @@ function renderLog() {
   });
   if (!rows.length) svg += `<text x="${W / 2}" y="${H / 2}" font-size="13" fill="#999" text-anchor="middle">No closing logs yet</text>`;
   $("wasteChart").innerHTML = svg;
-
-  const recent = rows.slice(-7);
-  const err = recent.length
-    ? recent.reduce((a, r) => a + Math.abs(r.customers - r.predicted) / Math.max(r.customers, 1), 0) / recent.length
-    : null;
-  const before = rows.filter(r => !r.planner), after = rows.filter(r => r.planner);
-  const avg = a => a.reduce((x, r) => x + r.boba, 0) / Math.max(a.length, 1);
-  $("acc").innerHTML = recent.length ? `
-    <p style="margin:0 0 8px">Last ${recent.length} logged days, the forecast was off by <b>${Math.round(err * 100)}%</b> on average.</p>
-    ${before.length && after.length ? `<p style="margin:0 0 8px">Boba thrown out: <b>${avg(before).toFixed(2)}</b> batches/day before → <b>${avg(after).toFixed(2)}</b> with FroCast.</p>` : ""}
-    <p style="margin:0;color:var(--muted)">Each saved log nudges the forecast toward this shop's real numbers.${hasSample ? " Faded bars are sample history." : ""}</p>`
-    : `<p style="margin:0;color:var(--muted)">Save a closing log to start tracking accuracy and waste.</p>`;
-  // stockouts come from real logs only (sample history doesn't record them)
-  const mine = st.logs.slice(-7), ranOut = mine.filter(l => l.ran).length;
-  if (mine.length) {
-    $("acc").innerHTML += `<p style="margin:10px 0 0">Ran out of boba on <b>${ranOut}</b> of the last ${mine.length} logged day${mine.length === 1 ? "" : "s"}.${ranOut >= 2
-      ? ' <b style="color:var(--red)">Consider raising the busy-day backup in Settings</b> so the plan prepares for busier days.' : ""}</p>`;
-  }
 }
 
 function initLog() {
@@ -468,15 +463,6 @@ function renderSettings() {
 }
 
 function initSettings() {
-  // "assumed, tap to set" badges jump to that day's field in Settings
-  document.addEventListener("click", e => {
-    const b = e.target.closest("[data-set]");
-    if (!b) return;
-    document.querySelector('#tabs [data-tab="settings"]').click();
-    const inp = document.querySelector(`[data-base="${b.dataset.set}"]`);
-    inp?.focus();
-    inp?.select();
-  });
   $("resetAll").addEventListener("click", () => {
     store.clear();
     st.s = structuredClone(DEFAULTS);
@@ -511,7 +497,6 @@ function initTabs() {
 async function start() {
   initTabs();
   initEventForms();
-  initSources();
   initLog();
   initSettings();
   const [{ days, live }, remote, shape] = await Promise.all([getWeather(today(), LOCATION), store.pull(), loadShape()]);
