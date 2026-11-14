@@ -398,7 +398,7 @@ function allLogs() {
 function renderLog() {
   const rows = allLogs().slice(-14);
   const hasSample = rows.some(r => r.sample);
-  $("wasteTitle").textContent = `Boba thrown out per day (batches)${hasSample ? " · includes sample history" : ""}`;
+  $("wasteTitle").textContent = `Boba thrown out per day (batches)${hasSample ? " · faded bars are sample history" : ""}`;
   $("clearSample").textContent = st.showSample ? "Hide sample history" : "Show sample history";
 
   const W = 520, H = 200, L = 30, B = 30, bw = (W - L - 10) / Math.max(rows.length, 1);
@@ -415,24 +415,6 @@ function renderLog() {
   });
   if (!rows.length) svg += `<text x="${W / 2}" y="${H / 2}" font-size="13" fill="#999" text-anchor="middle">No closing logs yet</text>`;
   $("wasteChart").innerHTML = svg;
-
-  const recent = rows.slice(-7);
-  const err = recent.length
-    ? recent.reduce((a, r) => a + Math.abs(r.customers - r.predicted) / Math.max(r.customers, 1), 0) / recent.length
-    : null;
-  const before = rows.filter(r => !r.planner), after = rows.filter(r => r.planner);
-  const avg = a => a.reduce((x, r) => x + r.boba, 0) / Math.max(a.length, 1);
-  $("acc").innerHTML = recent.length ? `
-    <p style="margin:0 0 8px">Last ${recent.length} logged days, the forecast was off by <b>${Math.round(err * 100)}%</b> on average.</p>
-    ${before.length && after.length ? `<p style="margin:0 0 8px">Boba thrown out: <b>${avg(before).toFixed(2)}</b> batches/day before → <b>${avg(after).toFixed(2)}</b> with FroCast.</p>` : ""}
-    <p style="margin:0;color:var(--muted)">Each saved log nudges the forecast toward this shop's real numbers.${hasSample ? " Faded bars are sample history." : ""}</p>`
-    : `<p style="margin:0;color:var(--muted)">Save a closing log to start tracking accuracy and waste.</p>`;
-  // stockouts come from real logs only (sample history doesn't record them)
-  const mine = st.logs.slice(-7), ranOut = mine.filter(l => l.ran).length;
-  if (mine.length) {
-    $("acc").innerHTML += `<p style="margin:10px 0 0">Ran out of boba on <b>${ranOut}</b> of the last ${mine.length} logged day${mine.length === 1 ? "" : "s"}.${ranOut >= 2
-      ? ' <b style="color:var(--red)">Consider raising the busy-day backup in Settings</b> so the plan prepares for busier days.' : ""}</p>`;
-  }
 }
 
 function initLog() {
