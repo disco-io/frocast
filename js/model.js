@@ -1,4 +1,4 @@
-import { HOURS, HOUR_W, TYPES, WHEN } from "./config.js";
+import { HOURS, HOUR_W, TYPES, WHEN, TEMP, RAIN } from "./config.js";
 
 export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -9,9 +9,8 @@ export const iso = d =>
 export const dayEvents = (events, key) => events.filter(e => key >= e.from && key <= e.to);
 export const isBreak = (events, key) => dayEvents(events, key).some(e => e.type === "break");
 
-// Temperature effect: 30°F ×0.45 … 70°F ×1.0 … 90°F ×1.25
-export function tempFactor(t) {
-  const pts = [[20, 0.4], [30, 0.45], [40, 0.55], [55, 0.75], [70, 1], [85, 1.2], [95, 1.3]];
+// Straight-line lookup in [x, y] points
+function curve(pts, t) {
   if (t <= pts[0][0]) return pts[0][1];
   for (let i = 1; i < pts.length; i++) {
     if (t <= pts[i][0]) {
@@ -20,27 +19,44 @@ export function tempFactor(t) {
       return fa + ((fb - fa) * (t - a)) / (b - a);
     }
   }
-  return 1.3;
+  return pts[pts.length - 1][1];
 }
 
-// Expected customers = typical day × weather × campus × events × learned correction
+// Temperature effect on froyo: 30°F ×0.45 … 70°F ×1.0 … 90°F ×1.25
+export const tempFactor = t => curve(TEMP.froyo, t);
+// Temperature effect on tea: 30°F ×0.75 … 70°F ×1.0 … 90°F ×1.05
+export const teaTempFactor = t => curve(TEMP.tea, t);
+
+// Expected customers, froyo and tea counted separately:
+//   froyo = typical day × froyo share × weather (froyo) × campus × events × learned correction
+//   tea   = typical day × tea share   × weather (tea)   × campus × events × learned correction
+// A factor row has m (same for both) or mf / mt (froyo / tea).
 export function forecast(day, events, s) {
   const dow = DOW[day.date.getDay()];
   const base = s.base[dow];
+  const share = s.froyoShare ?? 0.6;
   const evs = dayEvents(events, day.key);
   const brk = evs.find(e => e.type === "break");
   const f = [
-    { label: `Typical ${dow} (warm day, students here)`, base },
-    { label: `🌡 ${Math.round(day.temp)}°F`, m: tempFactor(day.temp) },
+    { label: `Typical ${dow} (warm day, students here)`, base, froyo: base * share, tea: base * (1 - share) },
+    { label: `🌡 ${Math.round(day.temp)}°F`, mf: tempFactor(day.temp), mt: teaTempFactor(day.temp) },
     brk ? { label: `${TYPES.break.icon} ${brk.label}`, m: TYPES.break.mult } : { label: "🎓 Students on campus", m: 1 }
   ];
-  if (day.rain) f.push({ label: "☔ Rain or snow", m: 0.8 });
+  if (day.rain) f.push({ label: "☔ Rain or snow", mf: RAIN.froyo, mt: RAIN.tea });
   evs.filter(e => e.type !== "break").forEach(e =>
     f.push({ label: `${TYPES[e.type].icon} ${e.label} · ${WHEN[e.when].name.toLowerCase()} (${e.source})`, m: TYPES[e.type].mult }));
   if (Math.abs(s.calib - 1) > 0.01) f.push({ label: "📝 Adjusted from your closing logs", m: s.calib });
-  const total = f.reduce((acc, x) => (x.m ? acc * x.m : acc), base);
-  return { base, factors: f, customers: Math.max(0, Math.round(total)) };
+  const mult = key => f.slice(1).reduce((acc, x) => acc * (x[key] ?? x.m), 1);
+  const froyoMult = mult("mf"), teaMult = mult("mt");
+  const froyo = Math.max(0, Math.round(base * share * froyoMult));
+  const tea = Math.max(0, Math.round(base * (1 - share) * teaMult));
+  return { base, factors: f, froyo, tea, froyoMult, teaMult, customers: froyo + tea };
 }
+
+// Older callers may pass a plain customer count; split it with the froyo share.
+const split = (fc, s) => (typeof fc === "number"
+  ? { froyo: fc * (s.froyoShare ?? 0.6), tea: fc * (1 - (s.froyoShare ?? 0.6)) }
+  : fc);
 
 // Spread the day's customers across open hours, boosted when events happen
 export function hourly(customers, day, events) {
@@ -86,9 +102,16 @@ function simulate(demand, s, decide) {
   return { batches, cooked, tossed };
 }
 
+// Boba drinks per open hour: tea drinks with boba + froyo cups with boba topping
+export function bobaDemand(fc, day, events, s) {
+  const { froyo, tea } = split(fc, s);
+  const hf = hourly(froyo, day, events), ht = hourly(tea, day, events);
+  return hf.map((x, i) => x * (s.bobaShareFroyo ?? 0.05) + ht[i] * (s.bobaShareTea ?? 0.7));
+}
+
 // Boba plan: cook only when stock runs short, sized in quarter batches to the next few hours
-export function bobaPlan(customers, day, events, s) {
-  const demand = hourly(customers, day, events).map(c => c * s.bobaShare);
+export function bobaPlan(fc, day, events, s) {
+  const demand = bobaDemand(fc, day, events, s);
   const plan = simulate(demand, s, (i, h, have) => {
     if (demand[i] <= have + 0.01) return 0;
     const ahead = demand.slice(i, i + s.bobaHours).reduce((a, b) => a + b, 0) - have;
@@ -100,9 +123,11 @@ export function bobaPlan(customers, day, events, s) {
   return { ...plan, oldTossed: old.tossed };
 }
 
-export function fruitPlan(customers, s) {
-  const cups = customers * (1 - s.bobaShare) * s.fruitShare;
+// Fresh fruit goes on froyo cups only
+export function fruitPlan(fc, s) {
+  const cups = split(fc, s).froyo * s.fruitShare;
   return { cups, containers: Math.max(1, Math.ceil(cups / s.cupsPerContainer)) };
 }
 
-export const machines = customers => (customers < 35 ? 3 : customers < 65 ? 4 : 5);
+// Froyo machines to run, from froyo customers (same cut-offs as before at a 60% froyo share)
+export const machines = froyo => (froyo < 21 ? 3 : froyo < 39 ? 4 : 5);
