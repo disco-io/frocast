@@ -12,11 +12,11 @@ import { fileURLToPath } from "node:url";
 import { DEMO_BINS } from "../../js/demo-data.js";
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), "out");
-const W = 1600, H = 1200, F = 1250, CX = W / 2, CY = H / 2;
-const CAM_H = 0.5, PITCH = (45 * Math.PI) / 180;
+export const W = 1600, H = 1200, F = 1250, CX = W / 2, CY = H / 2;
+export const CAM_H = 0.5, PITCH = (45 * Math.PI) / 180;
 const LEVELS = [0, 0.25, 0.5, 0.75, 1];
 
-function rng(seed) {
+export function rng(seed) {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -28,12 +28,12 @@ function rng(seed) {
 }
 
 // World: x right, y up (camera at 0, counter at -CAM_H), z forward. Returns [screenX, screenY, depth].
-function proj([x, y, z]) {
+export function proj([x, y, z]) {
   const s = Math.sin(PITCH), c = Math.cos(PITCH);
   const zc = -y * s + z * c, yc = y * c + z * s;
   return [CX + (F * x) / zc, CY - (F * yc) / zc, zc];
 }
-const pts = list => list.map(p => proj(p)).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+export const pts = list => list.map(p => proj(p)).map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
 
 // A pan's rectangle at height y, inset i (pans taper toward the bottom).
 function rect(pan, y, i = 0) {
@@ -57,7 +57,7 @@ const TOPPING = {
 };
 const pick = (r, list) => list[Math.floor(r() * list.length)];
 
-function chunk(r, s, cols, seed) {
+export function chunk(r, s, cols, seed) {
   const n = 6, rad = s * (0.9 + r() * 0.6), rot = r() * 6.28;
   const p = Array.from({ length: n }, (_, k) => {
     const a = rot + (k / n) * 6.28, rr = rad * (0.7 + r() * 0.45);
@@ -66,7 +66,7 @@ function chunk(r, s, cols, seed) {
   const seeds = Array.from({ length: 3 }, () => `<ellipse cx="${((r() - 0.5) * rad).toFixed(1)}" cy="${((r() - 0.5) * rad * 0.6).toFixed(1)}" rx="${(s * 0.08).toFixed(1)}" ry="${(s * 0.05).toFixed(1)}" fill="${seed}"/>`).join("");
   return `<polygon points="${p}" fill="${pick(r, cols)}" stroke="#7a0a1a" stroke-width="${(s * 0.06).toFixed(1)}" stroke-opacity=".5"/>${seeds}`;
 }
-function cube(r, s, cols) {
+export function cube(r, s, cols) {
   const w = s * (1.1 + r() * 0.5), rot = (r() - 0.5) * 70;
   return `<g transform="rotate(${rot.toFixed(0)})"><rect x="${(-w / 2).toFixed(1)}" y="${(-w / 2 * 0.8).toFixed(1)}" width="${w.toFixed(1)}" height="${(w * 0.8).toFixed(1)}" rx="${(w * 0.18).toFixed(1)}" fill="${pick(r, cols)}" stroke="#00000033" stroke-width="${(s * 0.07).toFixed(1)}"/>` +
     `<rect x="${(-w / 2 + w * 0.12).toFixed(1)}" y="${(-w / 2 * 0.8 + w * 0.08).toFixed(1)}" width="${(w * 0.35).toFixed(1)}" height="${(w * 0.18).toFixed(1)}" rx="${(w * 0.08).toFixed(1)}" fill="#ffffff" opacity=".35"/></g>`;
@@ -134,7 +134,7 @@ function drawPan(r, bin, level, id) {
 }
 
 // ---------- scene ----------
-function counter() {
+export function counter() {
   const c = [[-1.4, -CAM_H, 0.18], [1.4, -CAM_H, 0.18], [1.4, -CAM_H, 1.4], [-1.4, -CAM_H, 1.4]];
   const back = proj([0, -CAM_H, 1.4])[1];
   let s = `<rect x="-600" y="-200" width="${W + 1200}" height="${back + 220}" fill="url(#wall)"/>`;
@@ -144,7 +144,7 @@ function counter() {
   return s;
 }
 
-function hand() {
+export function hand() {
   // an arm reaching in from the bottom right toward the front middle pan
   return `<g filter="url(#softEdge)">
     <path d="M 1500 1260 C 1380 1130 1250 1050 1120 990 L 1050 1080 C 1180 1140 1300 1200 1380 1290 Z" fill="#2f3b52"/>
@@ -156,7 +156,7 @@ function hand() {
   </g>`;
 }
 
-function defs(seed) {
+export function defs(seed) {
   return `<defs>
     <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3efe8"/><stop offset="1" stop-color="#ddd6ca"/></linearGradient>
     <pattern id="tiles" width="90" height="45" patternUnits="userSpaceOnUse"><rect width="90" height="45" fill="none" stroke="#c9c1b4" stroke-width="2"/></pattern>
@@ -243,4 +243,4 @@ function main() {
   }
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) main(); // bowls.mjs imports the drawing helpers

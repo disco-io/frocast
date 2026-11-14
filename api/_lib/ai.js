@@ -1,12 +1,16 @@
 // Topping-bar vision: photo + the owner's bin list -> fill level per bin, as JSON only.
 // A close photo can come with the day's open photo and its confirmed levels as a yardstick (ref).
-// Uses the same model as the AI event import (ANTHROPIC_MODEL, default claude-haiku-5-5).
+// Model: VISION_MODEL, default claude-opus-5-5 at low effort (VISION_EFFORT: low | medium | high).
+// On drawn before/after bowl photos with a known answer (tools/testbar/bowls.mjs, 24 levels per
+// run) Opus read 23-24 right at low and at medium effort, in about 2 s at low and 6 s at medium;
+// Sonnet read 20 and Haiku 17. Drawings only: re-run the scorer before changing these.
 // VISION_STUB=<path to JSON> returns a canned answer (tests and offline demo).
 import Anthropic from "@anthropic-ai/sdk";
 import { jsonSchemaOutputFormat } from "@anthropic-ai/sdk/helpers/json-schema";
 import { readFileSync } from "node:fs";
 
-export const VISION_MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-5-5";
+export const VISION_MODEL = process.env.VISION_MODEL || "claude-opus-5-5";
+const EFFORT = ["low", "medium", "high"].includes(process.env.VISION_EFFORT) ? process.env.VISION_EFFORT : "low";
 export const PROBLEMS = ["glare", "blur", "too_dark", "bins_cut_off", "view_blocked", "person_in_frame", "not_topping_bar"];
 
 const SCHEMA = {
@@ -34,9 +38,9 @@ const SCHEMA = {
 };
 
 const SYSTEM = `You check photos of topping containers at a frozen yogurt shop: the pans of the topping bar, or bowls or cups of toppings on a counter. Staff take one photo when the shop opens and one at close.
-For each bin in the list, estimate how full its container is as a fraction of a full one: 0 (empty), 0.25, 0.5, 0.75 or 1 (full). Full means the food reaches about the rim. Judge by how deep the food sits: how much of the container's inside wall shows above it, and whether the bottom shows through.
+For each bin in the list, estimate how full its container is as a fraction of a full one: 0 (empty), 0.25, 0.5, 0.75 or 1 (full). A level is a height: how far up the container's depth the top of the food sits. It is not how much of the opening the food covers when seen from above (a bowl narrows toward the bottom, so a half-full bowl still shows a wide patch of food). At 1 the food reaches about the rim and almost no inside wall shows. At 0.5 the band of inside wall showing above the food is about as tall as the food is deep. At 0.25 the food is a shallow layer on the bottom with mostly bare wall above it. At 0 only scraps or the bare bottom are left.
 Find each bin by what is in it when its name says so (for example "Strawberries"). When names don't settle it, use position: rows are numbered from the back (row 1) toward the camera, columns from left (1) to right as seen in the photo.
-When an earlier photo from the same day is included, it was taken from the same spot and staff confirmed the levels in it. Use it as the yardstick: compare each container with the same container in the earlier photo, and work out the level now from how far the food has dropped (or risen, after a refill). A container that looks unchanged keeps its earlier level.
+When an earlier photo from the same day is included, it was taken from the same spot and staff confirmed the levels in it. Use it as the yardstick: compare each container with the same container in the earlier photo, and work out the level now from how far the top of the food has dropped (how much more inside wall shows now) or risen after a refill. A container that looks unchanged keeps its earlier level.
 Only estimate a bin you can actually see. If a bin is cut off, covered, blurry, or you can't tell which bin it is, set visible to false or confidence to "low". Do not guess.
 Set photo_usable to false and list the problems if glare or reflections hide bins, the photo is blurry or too dark, bins are cut off, something blocks the view, the photo does not show the containers (not_topping_bar), or any person (face, body, arm or hand) is in the frame (person_in_frame).
 Return every bin in the list exactly once, using its id.`;
@@ -72,10 +76,10 @@ export async function estimateBins({ base64, mime, bins, kind, allowScreen = fal
     : [image(mime, base64), { type: "text", text: `${intro} Bins:\n${list}` }];
   const msg = await client.messages.parse({
     model: VISION_MODEL,
-    max_tokens: 4000,
+    max_tokens: 8000,
     system: SYSTEM,
     messages: [{ role: "user", content }],
-    output_config: { format: jsonSchemaOutputFormat(SCHEMA) }
+    output_config: { format: jsonSchemaOutputFormat(SCHEMA), effort: EFFORT }
   });
   if (msg.stop_reason === "refusal") return { unavailable: true, reason: "refusal" };
   if (msg.stop_reason === "max_tokens" || !msg.parsed_output) return { unavailable: true, reason: "bad_output" };
