@@ -46,7 +46,6 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 | Person / agent | Task | Files | Started |
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
-| Drew (Claude) | Demo slider, then topping check steps 3–4 | new: `demo.html` `js/demo.js` `js/demo-data.js` `css/demo.css` `demo/*` `api/demo.js` `tests/demo.test.mjs`; `api/boba.js` `api/toppings.js` `api/vision.js` `api/_lib/db.js` `db/schema.js` `js/clock.js` `js/toppings.js` `toppings.html` `js/strings.js` `vercel.json`; small: `README.md` | Sat 18:00 |
 
 ## Project layout
 ```
