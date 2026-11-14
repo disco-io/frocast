@@ -135,7 +135,9 @@ function renderShape(day, fc) {
   }));
 }
 
-// Stacked bars: froyo (pink) at the bottom, tea (blue) on top, 2px gap between
+// Stacked bars: froyo (pink) at the bottom, tea (blue) on top, 2px gap between.
+// Pointing at an hour shows a small card with that hour's froyo and tea.
+let tipTimer = null;
 function drawHourly(hf, ht, batches) {
   const tot = hf.map((f, i) => f + ht[i]);
   const max = Math.max(...tot, 1);
@@ -147,8 +149,8 @@ function drawHourly(hf, ht, batches) {
   });
   hf.forEach((c, i) => {
     const hF = (c / max) * (H - B - 20), hT = (ht[i] / max) * (H - B - 20), x = L + i * bw + 4;
-    svg += `<rect x="${x}" y="${H - B - hF}" width="${bw - 8}" height="${hF}" fill="var(--pink)"><title>${fmtH(HOURS[i])}: ${Math.round(c)} froyo</title></rect>`;
-    svg += `<rect x="${x}" y="${H - B - hF - 2 - hT}" width="${bw - 8}" height="${Math.max(hT, 0)}" rx="4" fill="var(--blue)"><title>${fmtH(HOURS[i])}: ${Math.round(ht[i])} tea</title></rect>`;
+    svg += `<g class="hr" data-col="${i}"><rect x="${x}" y="${H - B - hF}" width="${bw - 8}" height="${hF}" fill="var(--pink)"><title>${fmtH(HOURS[i])}: ${Math.round(c)} froyo</title></rect>`;
+    svg += `<rect x="${x}" y="${H - B - hF - 2 - hT}" width="${bw - 8}" height="${Math.max(hT, 0)}" rx="4" fill="var(--blue)"><title>${fmtH(HOURS[i])}: ${Math.round(ht[i])} tea</title></rect></g>`;
     if (i % 2 === 0) svg += `<text x="${x + (bw - 8) / 2}" y="${H - 8}" font-size="10" fill="#888" text-anchor="middle">${fmtH(HOURS[i]).replace(":00", "")}</text>`;
   });
   batches.forEach(b => {
@@ -157,9 +159,38 @@ function drawHourly(hf, ht, batches) {
   });
   // One tap target per hour, on top of the bars, for the "Why?" line (renderShape)
   HOURS.forEach((h, i) => {
-    svg += `<rect data-h="${i}" x="${L + i * bw}" y="20" width="${bw}" height="${H - B - 20}" fill="transparent" style="cursor:pointer"><title>${fmtH(h)}: ${Math.round(hf[i])} froyo · ${Math.round(ht[i])} tea</title></rect>`;
+    svg += `<rect data-h="${i}" x="${L + i * bw}" y="20" width="${bw}" height="${H - B - 20}" fill="transparent" style="cursor:pointer" role="img" aria-label="${fmtH(h)}: ${Math.round(hf[i])} froyo, ${Math.round(ht[i])} tea"></rect>`;
   });
-  $("hourly").innerHTML = svg;
+  const TW = 104, TH = 54; // hover card, in the chart's own units
+  svg += `<g id="hourTip" class="hour-tip" aria-hidden="true"><rect width="${TW}" height="${TH}" rx="8" fill="var(--ink)"/>` +
+    `<text id="tipHour" x="10" y="17" font-size="11" font-weight="700" fill="#fff"></text>` +
+    `<circle cx="14" cy="29" r="4" fill="var(--pink)"/><text id="tipFroyo" x="24" y="33" font-size="11.5" fill="#fff"></text>` +
+    `<circle cx="14" cy="43" r="4" fill="var(--blue)"/><text id="tipTea" x="24" y="47" font-size="11.5" fill="#fff"></text></g>`;
+  const chart = $("hourly");
+  chart.innerHTML = svg;
+  const tip = $("hourTip");
+  const show = i => {
+    clearTimeout(tipTimer);
+    $("tipHour").textContent = fmtH(HOURS[i]);
+    $("tipFroyo").textContent = `${Math.round(hf[i])} froyo`;
+    $("tipTea").textContent = `${Math.round(ht[i])} tea`;
+    const x = Math.max(L, Math.min(W - 10 - TW, L + i * bw + bw / 2 - TW / 2));
+    const y = H - B - (tot[i] / max) * (H - B - 20) - TH - 10; // just above that hour's bar
+    if (!tip.classList.contains("on")) { // first appearance: fade in at the spot instead of flying in
+      tip.style.transition = "none";
+      tip.style.transform = `translate(${x}px, ${y + 6}px)`;
+      tip.getBoundingClientRect();
+      tip.style.transition = "";
+    }
+    tip.style.transform = `translate(${x}px, ${y}px)`;
+    tip.classList.add("on");
+    chart.classList.add("hovering");
+    chart.querySelectorAll(".hr").forEach(g => g.classList.toggle("on", +g.dataset.col === i));
+  };
+  const hide = () => { tip.classList.remove("on"); chart.classList.remove("hovering"); };
+  chart.querySelectorAll("[data-h]").forEach(r => r.addEventListener("pointerenter", () => show(+r.dataset.h)));
+  // A finger leaves as soon as it lifts, so keep the card up a moment on touch screens
+  chart.onpointerleave = e => { clearTimeout(tipTimer); tipTimer = setTimeout(hide, e.pointerType === "mouse" ? 0 : 2500); };
 }
 
 // ---------------- Outlook ----------------

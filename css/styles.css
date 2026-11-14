@@ -54,6 +54,14 @@ nav button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
 .saved { margin-top: 8px; font-size: 13px; font-weight: 600; color: #8f2c52; }
 
 .chart { width: 100%; height: auto; display: block; }
+/* Hourly chart: the hour under the pointer stays bright and a small card shows its froyo and tea */
+#hourly { overflow: visible; }
+#hourly .hr { transition: opacity .18s ease; }
+#hourly.hovering .hr { opacity: .35; }
+#hourly.hovering .hr.on { opacity: 1; }
+.hour-tip { opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .22s cubic-bezier(.2, .8, .2, 1); filter: drop-shadow(0 4px 8px rgba(15, 18, 26, .25)); }
+.hour-tip.on { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { #hourly .hr, .hour-tip { transition: none; } }
 .legend { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
 .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 
