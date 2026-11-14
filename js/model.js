@@ -1,4 +1,5 @@
 import { HOURS, HOUR_W, TYPES, WHEN, TEMP, RAIN, EVENT_STACK, isMajor } from "./config.js";
+import { dayWeights } from "./shape.js";
 
 export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -31,15 +32,20 @@ export const teaTempFactor = t => curve(TEMP.tea, t);
 //   froyo = typical day × froyo share × weather (froyo) × campus × events × learned correction
 //   tea   = typical day × tea share   × weather (tea)   × campus × events × learned correction
 // A factor row has m (same for both) or mf / mt (froyo / tea).
+// The typical day and the hourly shape both describe recent weeks, so they already include the season:
+// weather only counts how much colder or warmer the day is than the last few weeks (day.norm).
+// Without day.norm the comparison is the 70°F point where both curves are ×1.0.
 export function forecast(day, events, s) {
   const dow = DOW[day.date.getDay()];
   const base = s.base[dow];
   const share = s.froyoShare ?? 0.6;
   const evs = dayEvents(events, day.key);
   const brk = evs.find(e => e.type === "break");
+  const norm = day.norm ?? 70;
   const f = [
-    { label: `Typical ${dow} (warm day, students here)`, base, froyo: base * share, tea: base * (1 - share) },
-    { label: `🌡 ${Math.round(day.temp)}°F`, mf: tempFactor(day.temp), mt: teaTempFactor(day.temp) },
+    { label: `Typical ${dow} (recent weeks, students here)`, base, froyo: base * share, tea: base * (1 - share) },
+    { label: `🌡 ${Math.round(day.temp)}°F${day.norm == null ? "" : ` vs. ${Math.round(norm)}°F recent norm`}`,
+      mf: tempFactor(day.temp) / tempFactor(norm), mt: teaTempFactor(day.temp) / teaTempFactor(norm) },
     brk ? { label: `${TYPES.break.icon} ${brk.label}`, m: TYPES.break.mult } : { label: "🎓 Students on campus", m: 1 }
   ];
   if (day.rain) f.push({ label: "☔ Rain or snow", mf: RAIN.froyo, mt: RAIN.tea });
@@ -65,11 +71,14 @@ const split = (fc, s) => (typeof fc === "number"
   ? { froyo: fc * (s.froyoShare ?? 0.6), tea: fc * (1 - (s.froyoShare ?? 0.6)) }
   : fc);
 
-// Spread the day's customers across open hours, boosted when events happen
-export function hourly(customers, day, events) {
+// Spread the day's customers across open hours: customers(d, h) = daily total × weight(d, h).
+// Weights come from the cached BestTime shape for that weekday, or the baseline curve without one.
+// Hours with events are boosted, then the day is re-normalized so it still adds up to the total.
+export function hourly(customers, day, events, shape) {
   const boost = new Set();
   if (day) dayEvents(events, day.key).forEach(e => WHEN[e.when].hours.forEach(h => boost.add(h)));
-  const w = HOURS.map((h, i) => HOUR_W[i] * (boost.has(h) ? 1.6 : 1));
+  const dayShape = (day && dayWeights(shape, DOW[day.date.getDay()], HOURS)) || HOUR_W;
+  const w = HOURS.map((h, i) => dayShape[i] * (boost.has(h) ? 1.6 : 1));
   const sum = w.reduce((a, b) => a + b, 0);
   return w.map(x => (customers * x) / sum);
 }
@@ -110,9 +119,9 @@ function simulate(demand, s, decide) {
 }
 
 // Boba drinks per open hour: tea drinks with boba + froyo cups with boba topping
-export function bobaDemand(fc, day, events, s) {
+export function bobaDemand(fc, day, events, s, shape) {
   const { froyo, tea } = split(fc, s);
-  const hf = hourly(froyo, day, events), ht = hourly(tea, day, events);
+  const hf = hourly(froyo, day, events, shape), ht = hourly(tea, day, events, shape);
   return hf.map((x, i) => x * (s.bobaShareFroyo ?? 0.05) + ht[i] * (s.bobaShareTea ?? 0.7));
 }
 
@@ -125,8 +134,8 @@ const cook = (demand, s) => simulate(demand, s, (i, h, have) => {
 
 // Boba plan, plus a backup: what to add if the day turns out busier than expected (s.cushion = how much busier).
 // busyFc is the forecast scaled up by the cushion, so the caller can size fruit and froyo for a busy day too.
-export function bobaPlan(fc, day, events, s) {
-  const demand = bobaDemand(fc, day, events, s);
+export function bobaPlan(fc, day, events, s, shape) {
+  const demand = bobaDemand(fc, day, events, s, shape);
   const plan = cook(demand, s);
   const n = Math.max(1, s.oldBatches);
   const times = Array.from({ length: n }, (_, k) => HOURS[Math.floor((k * HOURS.length) / n)]);
@@ -136,7 +145,7 @@ export function bobaPlan(fc, day, events, s) {
   const { froyo, tea } = split(fc, s);
   const busyFc = { froyo: froyo * up, tea: tea * up };
   const busyCustomers = Math.round((froyo + tea) * up);
-  const busy = cook(bobaDemand(busyFc, day, events, s), s);
+  const busy = cook(bobaDemand(busyFc, day, events, s, shape), s);
   const base = Object.fromEntries(plan.batches.map(b => [b.h, b.size]));
   const backup = busy.batches
     .map(b => ({ h: b.h, size: +(b.size - (base[b.h] || 0)).toFixed(2) }))

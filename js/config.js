@@ -1,6 +1,9 @@
 // Shop settings: placeholders until the shop confirms them (editable in Settings)
 export const DEFAULTS = {
-  base: { Sun: 70, Mon: 45, Tue: 45, Wed: 50, Thu: 58, Fri: 80, Sat: 85 }, // typical warm (70°F) day, students on campus
+  // Typical day's total in recent weeks, students on campus. Until the owner sets a day in Settings these are
+  // ILLUSTRATIVE figures from franchise benchmarks (125 weekday, 185 weekend day), not this shop's data.
+  base: { Sun: 185, Mon: 125, Tue: 125, Wed: 125, Thu: 125, Fri: 125, Sat: 185 },
+  baseSet: {},          // days whose total the owner has set (the rest show "assumed, tap to set")
   froyoShare: 0.6,      // share of those customers buying froyo (the rest buy tea)
   bobaShareTea: 0.7,    // share of tea drinks with boba
   bobaShareFroyo: 0.05, // share of froyo cups with boba as a topping
@@ -15,6 +18,14 @@ export const DEFAULTS = {
   photoDays: 14,        // days to keep topping-bar photos (the confirmed numbers stay)
   calib: 1.0            // learned correction from closing logs
 };
+
+// Saved settings on top of the defaults. A typical-day total counts only if the owner set it (baseSet);
+// every other day stays the labeled placeholder, whatever an older save holds. Every screen uses this.
+export function settings(src = {}) {
+  const set = src?.baseSet || {};
+  const own = Object.fromEntries(Object.entries(src?.base || {}).filter(([d]) => set[d]));
+  return { ...structuredClone(DEFAULTS), ...(src || {}), base: { ...DEFAULTS.base, ...own }, baseSet: { ...set } };
+}
 
 export const SETTING_FIELDS = [
   ["froyoShare", "Share of customers buying froyo (rest buy tea)", 0.05, 0, 1],
@@ -31,11 +42,13 @@ export const SETTING_FIELDS = [
   ["photoDays", "Days to keep topping-bar photos", 1, 1, 90]
 ];
 
-// Shop hours (10 AM – 11 PM) and the usual shape of a day (evening-heavy)
+// Shop hours (10 AM – 11 PM) and our hand-made baseline shape of a day (evening-heavy).
+// The baseline is used when no BestTime forecast is cached (see js/shape.js).
 export const HOURS = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
 export const HOUR_W = [2, 4, 6, 6, 5, 5, 6, 7, 9, 11, 12, 10, 6];
 
 // How temperature changes demand ([°F, multiplier] points, straight lines between them).
+// The forecast uses these as a ratio (the day vs. the recent norm), not as an absolute cold penalty.
 // Froyo drops hard in the cold; tea (many drinks are hot) drops much less. Placeholders.
 export const TEMP = {
   froyo: [[20, 0.4], [30, 0.45], [40, 0.55], [55, 0.75], [70, 1], [85, 1.2], [95, 1.3]],

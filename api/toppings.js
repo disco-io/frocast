@@ -11,18 +11,18 @@
 import { ready, LOCATION, now } from "./_lib/db.js";
 import { requireDevice, requireOwner, sendError } from "./_lib/auth.js";
 import { toppingsEnabled } from "./_lib/photos.js";
-import { shopNow, isDay, isMin } from "./_lib/shop-time.js";
+import { shopNow, isDay, isMin, scen } from "./_lib/shop-time.js";
 import { isLevel, REFILLS, usage, discards, outcome } from "../js/toppings-math.js";
 import { suggestions, decide, totals, guidance } from "./_lib/topping-insights.js";
 
 function when(src) {
-  const scenario = src.scenario === "demo" ? "demo" : "live";
+  const scenario = scen(src.scenario);
   const live = shopNow();
   const min = Number(src.min);
   return {
     scenario,
-    day: isDay(src.day) && scenario === "demo" ? src.day : (isDay(src.day) && src.day <= live.day ? src.day : live.day),
-    min: scenario === "demo" && isMin(min) ? min : live.min
+    day: isDay(src.day) && scenario !== "live" ? src.day : (isDay(src.day) && src.day <= live.day ? src.day : live.day),
+    min: scenario !== "live" && isMin(min) ? min : live.min
   };
 }
 

@@ -16,7 +16,10 @@
       <div class="logo">❄</div>
       <div><h1 data-t="top.title">Topping bar check</h1><small><a href="/" data-t="clock.back">← Dashboard</a> · <span id="dayLabel"></span></small></div>
     </div>
-    <button class="tp-chip" id="lang" type="button">Español</button>
+    <div class="tp-head">
+      <button class="tp-chip hidden" id="startOver" type="button" data-t="top.startOver">Start over</button>
+      <button class="tp-chip" id="lang" type="button">Español</button>
+    </div>
   </header>
 
   <div class="card hidden" id="offCard"><p data-t="top.off">The topping bar check is turned off.</p></div>
@@ -38,7 +41,10 @@
         <input id="photoInput" type="file" accept="image/*" capture="environment" class="tp-file">
         <button class="btn ghost tp-big" type="button" id="byHand" data-t="top.byHand">Enter by hand</button>
         <button class="btn ghost tp-big hidden" type="button" id="samplePhoto" data-t="top.samplePhoto">Use sample photo (demo)</button>
-        <img id="photoPreview" class="tp-preview hidden" alt="">
+        <div class="tp-pair hidden" id="photoPair">
+          <figure class="hidden" id="beforeFig"><img id="photoBefore" alt=""><figcaption data-t="top.before">Before</figcaption></figure>
+          <figure><img id="photoPreview" alt=""><figcaption id="previewCap"></figcaption></figure>
+        </div>
       </div>
       <div class="tp-banner hidden" id="banner" role="status" aria-live="polite"></div>
       <div id="grid" class="tp-grid"></div>
@@ -82,12 +88,16 @@
 
 <div class="tp-sheet hidden" id="camSheet" role="dialog" aria-modal="true" aria-labelledby="camTitle">
   <div class="card tp-sheetcard tp-camcard">
-    <h2 id="camTitle" data-t="top.camTitle">Line up the bins with this morning's photo</h2>
-    <div class="tp-camview"><video id="camVideo" autoplay playsinline muted></video><img id="camOverlay" alt=""></div>
-    <label class="tp-camopt"><input type="checkbox" id="camOverlayOn" checked> <span data-t="top.camOverlay">Show this morning's photo</span></label>
+    <h2 id="camTitle">Line up the bins with this morning's photo</h2>
+    <div class="tp-camview" id="camView"><video id="camVideo" autoplay playsinline muted></video><img id="camOverlay" alt="">
+      <div class="tp-camhint hidden" id="camHint" role="status" aria-live="polite"></div></div>
+    <div class="tp-meter hidden" id="camMeter"><i></i></div>
+    <label class="tp-camopt" id="camOverlayOpt"><input type="checkbox" id="camOverlayOn" checked> <span id="camOverlayText">Show this morning's photo</span></label>
     <div class="tp-cambtns">
       <button class="btn tp-big" type="button" id="camShot" data-t="top.camShot">Take photo</button>
       <button class="btn ghost tp-big" type="button" id="camCancel" data-t="clock.cancel">Cancel</button>
+      <button class="btn ghost tp-big" type="button" id="camPick" data-t="top.camPick">Choose a file instead</button>
+      <button class="btn ghost tp-big hidden" type="button" id="camAnyway" data-t="top.camAnyway">Can't line up? Take it anyway</button>
     </div>
   </div>
 </div>

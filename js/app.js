@@ -1,20 +1,22 @@
-import { DEFAULTS, SETTING_FIELDS, HOURS, TYPES, WHEN, DEFAULT_SOURCES, withFixed, LEGACY_LABELS, LOCATION } from "./config.js";
+import { DEFAULTS, SETTING_FIELDS, HOURS, TYPES, WHEN, DEFAULT_SOURCES, withFixed, LEGACY_LABELS, LOCATION, settings } from "./config.js";
 import { DOW, MON, iso, dayEvents, isBreak, tempFactor, forecast, hourly, bobaPlan, fruitPlan, machines } from "./model.js";
 import { levelOf, whyLine } from "./busy.js";
 import { getWeather } from "./weather.js";
 import * as store from "./store.js";
+import { loadShape, label as shapeLabel } from "./shape.js";
 
 // ---------------- State ----------------
 // FIXED_EVENTS are always present (first in the list) and can't be deleted: see withFixed in config.js
 const saved = store.load();
 const st = {
-  s: { ...structuredClone(DEFAULTS), ...(saved.s || {}), base: { ...DEFAULTS.base, ...(saved.s?.base || {}) } },
+  s: settings(saved.s),
   events: withFixed((saved.events || []).filter(e => saved.v === 2 || !LEGACY_LABELS.includes(e.label))),
   sources: saved.sources || structuredClone(DEFAULT_SOURCES),   // calendars read by Sync
   sync: saved.sync || {},          // per source: last sync time, method, count, error
   logs: saved.logs || [],          // real closing logs
   showSample: saved.showSample ?? true,
   days: [],
+  shape: null,                     // cached BestTime hourly shape, or baseline (js/shape.js)
   live: false,
   sel: 0
 };
@@ -71,8 +73,8 @@ function renderToday() {
   $("level").title = `${Math.round(ratio * 100)}% of the 2-week average (${Math.round(avg)} customers)`;
   const drop = Math.round((1 - fc.customers / fc.base) * 100);
   $("cmp").innerHTML = (drop > 0
-    ? `<b>${drop}% fewer</b> than a typical warm ${dow} (${fc.base})`
-    : `${-drop}% more than a typical warm ${dow} (${fc.base})`) +
+    ? `<b>${drop}% fewer</b> than a typical recent ${dow} (${fc.base})`
+    : `${-drop}% more than a typical recent ${dow} (${fc.base})`) +
     ` · <span class="sw" style="background:var(--pink)"></span>${fc.froyo} froyo · <span class="sw" style="background:var(--blue)"></span>${fc.tea} tea`;
   $("wx").innerHTML = `<span>🌡 <b>${day.temp}°F</b></span><span>☁ <b>${day.cond}</b></span>` +
     dayEvents(st.events, day.key).map(e => `<span>${TYPES[e.type].icon} <b>${esc(e.label)}</b></span>`).join("");
@@ -80,15 +82,17 @@ function renderToday() {
   $("whyLine").textContent = whyLine(day, fc, st.events);
   const cls = m => (m < 0.99 ? "down" : m > 1.01 ? "up" : "flat");
   $("why").innerHTML = fc.factors.map(x => {
-    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
+    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)} ${totalBadge(dow)}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
     if (x.m === undefined) return `<div class="row"><span>${esc(x.label)}</span><span><span class="x ${cls(x.mf)}">froyo ×${x.mf.toFixed(2)}</span> · <span class="x ${cls(x.mt)}">tea ×${x.mt.toFixed(2)}</span></span></div>`;
     return `<div class="row"><span>${esc(x.label)}</span><span class="x ${cls(x.m)}">×${x.m.toFixed(2)}</span></div>`;
   }).join("");
   const chain = key => fc.factors.slice(1).map(x => "× " + (x[key] ?? x.m).toFixed(2)).join(" ");
   const [b0] = fc.factors;
   $("formula").textContent = `Froyo ${Math.round(b0.froyo)} ${chain("mf")} ≈ ${fc.froyo} · Tea ${Math.round(b0.tea)} ${chain("mt")} ≈ ${fc.tea} → ${fc.customers} customers`;
+  $("totalNote").textContent = st.s.baseSet[dow] ? ""
+    : `The typical ${dow} total (${fc.base}) is an illustrative figure from franchise benchmarks, not this shop's data.`;
 
-  const bp = bobaPlan(fc, day, st.events, st.s);
+  const bp = bobaPlan(fc, day, st.events, st.s, st.shape);
   const fp = fruitPlan(fc, st.s);
   const mach = machines(fc.froyo);
   const machBusy = machines(Math.round(bp.busyFc.froyo));
@@ -109,7 +113,28 @@ function renderToday() {
     <div class="item yo"><h3>🍦 Froyo: run ${mach} of 5 machines</h3>
       <ul><li>${mach < 5 ? "Pause the slowest flavors until it warms up" : "Busy day: run all machines"}</li><li>Keep your usual winter fill levels</li>${machBusy > mach ? `<li>If busier: turn on ${machBusy} machines</li>` : ""}</ul></div>`;
 
-  drawHourly(hourly(fc.froyo, day, st.events), hourly(fc.tea, day, st.events), bp.batches);
+  drawHourly(hourly(fc.froyo, day, st.events, st.shape), hourly(fc.tea, day, st.events, st.shape), bp.batches);
+  renderShape(day, fc);
+}
+
+// Daily totals the owner hasn't set are illustrative placeholders, and say so
+const totalBadge = dow => (st.s.baseSet[dow] ? ""
+  : `<button class="assumed" type="button" data-set="${dow}" title="Illustrative figure from franchise benchmarks, not this shop's data">assumed, tap to set</button>`);
+
+// Where the hourly numbers come from, and the "Why?" for any one hour
+function renderShape(day, fc) {
+  const dow = DOW[day.date.getDay()];
+  const src = shapeLabel(st.shape, dow, HOURS, new Date(), day.date);
+  const share = hourly(1, day, st.events, st.shape);
+  const boosted = new Set(dayEvents(st.events, day.key).flatMap(e => WHEN[e.when].hours));
+  $("shapeSrc").textContent = src;
+  $("hourWhy").textContent = "Tap an hour to see why.";
+  document.querySelectorAll("#hourly [data-h]").forEach(r => r.addEventListener("click", () => {
+    const i = +r.dataset.h;
+    const pct = `${(share[i] * 100).toFixed(1)}% of the day`;
+    $("hourWhy").textContent = `Why ${fmtH(HOURS[i])}? Froyo ${fc.froyo} × ${pct} ≈ ${Math.round(fc.froyo * share[i])} · tea ${fc.tea} × ${pct} ≈ ${Math.round(fc.tea * share[i])}. ` +
+      `${src}${boosted.has(HOURS[i]) ? " This hour is weighted ×1.6 for an event." : ""} Daily total: ${st.s.baseSet[dow] ? "owner-set" : "assumed"}.`;
+  }));
 }
 
 // Stacked bars: froyo (pink) at the bottom, tea (blue) on top, 2px gap between
@@ -131,6 +156,10 @@ function drawHourly(hf, ht, batches) {
   batches.forEach(b => {
     const x = L + HOURS.indexOf(b.h) * bw + bw / 2;
     svg += `<text x="${x}" y="14" font-size="13" text-anchor="middle">🧋</text><line x1="${x}" x2="${x}" y1="18" y2="${H - B}" stroke="var(--ink)" stroke-dasharray="3 3" opacity=".5"/>`;
+  });
+  // One tap target per hour, on top of the bars, for the "Why?" line (renderShape)
+  HOURS.forEach((h, i) => {
+    svg += `<rect data-h="${i}" x="${L + i * bw}" y="20" width="${bw}" height="${H - B - 20}" fill="transparent" style="cursor:pointer"><title>${fmtH(h)}: ${Math.round(hf[i])} froyo · ${Math.round(ht[i])} tea</title></rect>`;
   });
   $("hourly").innerHTML = svg;
 }
@@ -165,7 +194,7 @@ function renderOutlook() {
     `<tr><th>Day</th><th>Weather</th><th>Events</th><th>Customers</th><th>Busyness</th><th>Boba batches</th><th>Fruit containers</th></tr>` +
     st.days.map((d, i) => {
       const c = vals[i];
-      const bp = bobaPlan(fcs[i], d, st.events, st.s);
+      const bp = bobaPlan(fcs[i], d, st.events, st.s, st.shape);
       const byType = {};   // one tag per event type (icon shown once); extra events counted as "+ N more"
       dayEvents(st.events, d.key).forEach(e => (byType[e.type] ||= []).push(e));
       const notes = Object.entries(byType).map(([t, list]) =>
@@ -421,20 +450,33 @@ function initLog() {
 // ---------------- Settings ----------------
 function renderSettings() {
   const base = Object.keys(st.s.base)
-    .map(d => `<label>Typical ${d} (warm day) <input type="number" data-base="${d}" value="${st.s.base[d]}" min="0"></label>`).join("");
+    .map(d => `<label><span>Typical ${d}, customers per day${st.s.baseSet[d] ? "" : ` <span class="assumed" data-tag="${d}">assumed</span>`}</span> <input type="number" data-base="${d}" value="${st.s.base[d]}" min="0"></label>`).join("");
   $("settingsBox").innerHTML = SETTING_FIELDS
     .map(([k, label, step, min, max]) => `<label>${label}<input type="number" data-k="${k}" value="${st.s[k]}" step="${step}" min="${min}" max="${max}"></label>`)
     .join("") + base;
   document.querySelectorAll("#settingsBox input").forEach(inp => inp.addEventListener("change", () => {
     const v = +inp.value;
     if (Number.isNaN(v) || v < 0) return;
-    if (inp.dataset.base) st.s.base[inp.dataset.base] = v;
+    if (inp.dataset.base) {
+      st.s.base[inp.dataset.base] = v;
+      st.s.baseSet[inp.dataset.base] = true;   // the owner set it: no longer assumed
+      document.querySelector(`[data-tag="${inp.dataset.base}"]`)?.remove();
+    }
     else st.s[inp.dataset.k] = v;
     changed();
   }));
 }
 
 function initSettings() {
+  // "assumed, tap to set" badges jump to that day's field in Settings
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-set]");
+    if (!b) return;
+    document.querySelector('#tabs [data-tab="settings"]').click();
+    const inp = document.querySelector(`[data-base="${b.dataset.set}"]`);
+    inp?.focus();
+    inp?.select();
+  });
   $("resetAll").addEventListener("click", () => {
     store.clear();
     st.s = structuredClone(DEFAULTS);
@@ -472,8 +514,9 @@ async function start() {
   initSources();
   initLog();
   initSettings();
-  const [{ days, live }, remote] = await Promise.all([getWeather(today(), LOCATION), store.pull()]);
+  const [{ days, live }, remote, shape] = await Promise.all([getWeather(today(), LOCATION), store.pull(), loadShape()]);
   st.days = days;
+  st.shape = shape;
   st.live = live;
   // Shared data (Turso) wins over this browser's copy, so all paired devices match.
   if (remote) useShared(remote);
@@ -492,7 +535,7 @@ async function start() {
 }
 
 function useShared(shared) {
-  if (shared.s) st.s = { ...structuredClone(DEFAULTS), ...shared.s, base: { ...DEFAULTS.base, ...(shared.s.base || {}) } };
+  if (shared.s) st.s = settings(shared.s);
   if (shared.events) st.events = withFixed(shared.events);   // fixed events are never stored in the shared copy
   if (shared.logs) st.logs = shared.logs;
   if (shared.showSample !== undefined) st.showSample = shared.showSample;

@@ -6,8 +6,9 @@
     "start": "node server.js",
     "dev": "node server.js",
     "agent": "node --env-file=.env photon-agent.js",
-    "check": "for f in server.js middleware.js photon-agent.js js/*.js api/*.js api/_lib/*.js db/*.js; do node --check \"$f\" || exit 1; done",
-    "test": "node --test \"tests/*.test.mjs\""
+    "check": "for f in server.js middleware.js photon-agent.js js/*.js api/*.js api/_lib/*.js db/*.js scripts/*.js; do node --check \"$f\" || exit 1; done",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "besttime": "node scripts/besttime.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

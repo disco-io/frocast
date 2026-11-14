@@ -8,5 +8,9 @@ export function shopNow(date = new Date()) {
   return { day: `${parts.year}-${parts.month}-${parts.day}`, min: Number(parts.hour) * 60 + Number(parts.minute) };
 }
 
+// Which data set a request works on: the shop's real data, the simulated demo day, or the
+// two-bowl table demo. Anything unknown is "live".
+export const scen = v => (v === "demo" || v === "bowls" ? v : "live");
+
 export const isDay = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ""));
 export const isMin = v => Number.isInteger(v) && v >= 0 && v < 24 * 60;

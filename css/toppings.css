@@ -57,3 +57,23 @@
 .tp-sugg { border: 2px solid var(--amber); background: var(--amberSoft); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
 .tp-sugg p { margin: 0 0 8px; font-weight: 700; }
 .tp-sugg .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Line-up lock: the shutter stays off until the live view matches the earlier photo */
+.tp-head { display: flex; gap: 8px; align-items: center; }
+.tp-camview { width: min(100%, calc(56vh * var(--ar, 1.3333))); aspect-ratio: var(--ar, 1.3333); margin: 0 auto; border: 4px solid transparent; }
+.tp-camview.lock { border-color: var(--amber); }
+.tp-camview.ready { border-color: var(--mint); }
+.tp-camhint { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); max-width: 94%; text-align: center; background: rgba(15,18,26,.85); color: #fff; font-size: 17px; font-weight: 700; padding: 8px 16px; border-radius: 99px; }
+.tp-camview.ready .tp-camhint { background: var(--mint); }
+.tp-meter { height: 8px; border-radius: 99px; background: var(--line); margin-top: 10px; overflow: hidden; }
+.tp-meter i { display: block; height: 100%; width: 0; background: var(--amber); transition: width .2s; }
+.tp-meter.ready i { background: var(--mint); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+/* Before / now photos and the level change per bin */
+.tp-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; width: 100%; max-width: 640px; }
+.tp-pair figure { margin: 0; }
+.tp-pair img { display: block; width: 100%; border-radius: 12px; border: 1px solid var(--line); }
+.tp-pair figcaption { margin-top: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.tp-change { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 15px; font-weight: 700; }
+.tp-bar { flex: 0 1 84px; height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.tp-bar i { display: block; height: 100%; background: var(--mint); }
+.tp-change.drop .tp-bar.now i { background: var(--amber); }
