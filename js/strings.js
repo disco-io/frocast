@@ -102,7 +102,8 @@ export const STRINGS = {
     "top.discard": "Thrown out", "top.carry": "Carries over", "top.unset": "Not set",
     "top.panLabel": "Pan size", "top.panCost": "Cost per full pan ($)",
     "top.assumed": "assumed, tap to set",
-    "top.addBin": "Add bin", "top.save": "Save", "top.remove": "Remove", "top.noBins": "No bins yet. The owner adds them under Bins."
+    "top.addBin": "Add bin", "top.save": "Save", "top.remove": "Remove", "top.noBins": "No bins yet. The owner adds them under Bins.",
+    "top.samplePhoto": "Use sample photo (demo)"
   },
   es: {
     "lang.toggle": "English",
@@ -205,6 +206,7 @@ export const STRINGS = {
     "top.discard": "Se tira", "top.carry": "Se guarda", "top.unset": "Sin definir",
     "top.panLabel": "Tamaño del recipiente", "top.panCost": "Costo por recipiente lleno ($)",
     "top.assumed": "supuesto, toca para definir",
-    "top.addBin": "Agregar recipiente", "top.save": "Guardar", "top.remove": "Quitar", "top.noBins": "Todavía no hay recipientes. El dueño los agrega en Recipientes."
+    "top.addBin": "Agregar recipiente", "top.save": "Guardar", "top.remove": "Quitar", "top.noBins": "Todavía no hay recipientes. El dueño los agrega en Recipientes.",
+    "top.samplePhoto": "Usar foto de ejemplo (demo)"
   }
 };

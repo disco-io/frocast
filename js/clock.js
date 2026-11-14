@@ -4,6 +4,7 @@
 import { applyStatic, langToggle, t } from "./i18n.js";
 import { call } from "./api.js";
 import { DEFAULTS, DEFAULT_EVENTS, withFixed, LOCATION } from "./config.js";
+import { demoDay } from "./demo-data.js";
 import { forecast, bobaDemand, iso } from "./model.js";
 import { getWeather } from "./weather.js";
 import { clockState, OPEN, CLOSE } from "./planner.js";
@@ -40,6 +41,7 @@ async function loadShared() {
   }
   S.s = { ...structuredClone(DEFAULTS), ...(src.s || {}), base: { ...DEFAULTS.base, ...(src.s?.base || {}) } };
   S.events = withFixed(src.events || []);   // the dashboard never saves fixed events (e.g. HackPrinceton), so add them back
+  if (demo) S.events = withFixed(demoDay(todayKey())?.events || []); // demo days use their own (simulated) events
   if (r.status === 401) toPair();
 }
 
@@ -81,7 +83,7 @@ async function act(body) {
 // ---------- model ----------
 function today() {
   const key = todayKey();
-  const w = S.days.find(d => d.key === key);
+  const w = (demo && demoDay(key)?.weather) || S.days.find(d => d.key === key); // demo: the day's real recorded weather
   const [y, m, d] = key.split("-").map(Number);
   const day = { date: new Date(y, m - 1, d), key, temp: w?.temp ?? 55, rain: !!w?.rain };
   const fc = forecast(day, S.events, S.s);
@@ -283,7 +285,11 @@ async function start() {
     window.addEventListener("message", e => {
       if (e.origin !== location.origin || e.data?.type !== "frocast-time") return;
       S.simMin = Number(e.data.min);
-      if (e.data.day) S.simDay = e.data.day;
+      if (e.data.day && e.data.day !== S.simDay) {
+        S.simDay = e.data.day;
+        S.events = withFixed(demoDay(S.simDay)?.events || []);
+        S.lastMode = null; // no chime just for switching days
+      }
       refresh();
     });
   }

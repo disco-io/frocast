@@ -4,6 +4,7 @@
 import { applyStatic, langToggle, t } from "./i18n.js";
 import { call } from "./api.js";
 import { LEVELS, prefill, usage, discards } from "./toppings-math.js";
+import { DEMO_PHOTOS } from "./demo-data.js";
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -15,7 +16,8 @@ const S = {
 
 // ---------- helpers ----------
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const ctx = () => ({ scenario: demo ? "demo" : "live", ...(demo && params.get("day") ? { day: params.get("day") } : {}), ...(demo && params.has("min") ? { min: Number(params.get("min")) } : {}) });
+const D = { day: demo ? params.get("day") : null, min: demo && params.has("min") ? Number(params.get("min")) : null };
+const ctx = () => ({ scenario: demo ? "demo" : "live", ...(D.day ? { day: D.day } : {}), ...(D.min !== null ? { min: D.min } : {}) });
 const qs = () => new URLSearchParams(ctx()).toString();
 const lvl = v => t(`top.lvl.${v}`);
 const FR = { 0.25: "¼", 0.5: "½", 0.75: "¾" };
@@ -87,18 +89,34 @@ async function onPhoto(file) {
   }
   $("photoPreview").src = dataUrl;
   $("photoPreview").classList.remove("hidden");
+  showResult(kind, await askVision({ kind, image: dataUrl }));
+}
+
+// Demo only: the placeholder photo pair with canned (simulated) estimates.
+async function onSample() {
+  const kind = S.tab;
+  if (!["open", "close"].includes(kind)) return;
+  banner("", esc(t("top.checking")));
+  $("photoPreview").src = DEMO_PHOTOS[kind];
+  $("photoPreview").classList.remove("hidden");
+  showResult(kind, await askVision({ kind, sample: true }));
+}
+
+async function askVision(body) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 30000);
-  let res = null;
   try {
     const r = await fetch("/api/vision", { method: "POST", credentials: "same-origin", signal: ctl.signal,
-      headers: { "content-type": "application/json" }, body: JSON.stringify({ ...ctx(), kind, image: dataUrl }) });
-    res = r.ok ? await r.json() : null;
+      headers: { "content-type": "application/json" }, body: JSON.stringify({ ...ctx(), ...body }) });
+    return r.ok ? await r.json() : null;
   } catch {
-    res = null;
+    return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+function showResult(kind, res) {
   const retake = `<button class="btn ghost" type="button" data-retake>${esc(t("top.retake"))}</button>`;
   const hand = `<button class="btn ghost" type="button" data-hand>${esc(t("top.byHand"))}</button>`;
   if (!res || !res.available) {
@@ -136,7 +154,7 @@ function render() {
   $("checkView").classList.toggle("hidden", !["open", "close"].includes(S.tab));
   $("refillsView").classList.toggle("hidden", S.tab !== "refills");
   $("binsView").classList.toggle("hidden", S.tab !== "bins");
-  $("dayLabel").textContent = demo ? `${params.get("day") || ""} · demo (simulated)` : new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  $("dayLabel").textContent = demo ? `${D.day || ""} · demo (simulated)` : new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
   if (!S.data) return;
   if (S.tab === "open" || S.tab === "close") renderCheck(S.tab);
   if (S.tab === "refills") renderRefills();
@@ -357,6 +375,18 @@ async function start() {
     else say("ownerMsg", r.status === 429 ? t("pair.locked") : t("top.wrongPin"), "red");
   });
   if (location.hash === "#close" || location.hash === "#refills" || location.hash === "#bins") S.tab = location.hash.slice(1);
+  if (demo) {
+    $("samplePhoto").classList.remove("hidden");
+    $("samplePhoto").addEventListener("click", onSample);
+    // The demo page's slider sets the simulated day and time.
+    window.addEventListener("message", e => {
+      if (e.origin !== location.origin || e.data?.type !== "frocast-time") return;
+      if (e.data.day && e.data.day !== D.day) { D.day = e.data.day; S.draft = { open: {}, close: {} }; S.est = { open: null, close: null }; }
+      D.min = Number(e.data.min);
+      if (e.data.tab) S.tab = e.data.tab;
+      load();
+    });
+  }
   render();
   await load();
 }
