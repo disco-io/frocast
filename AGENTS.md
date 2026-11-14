@@ -58,6 +58,8 @@ js/weather.js       live forecast (Open-Meteo), sample fallback
 js/store.js         saves data in the browser (localStorage)
 js/app.js           rendering and UI events
 api/events.js       Vercel-style function: AI pulls events out of pasted calendar text
+api/sync.js         reads every calendar source (feeds + web pages) and returns dated events
+api/_lib.js         shared helpers: fetch, .ics parser, AI calls (not a route)
 server.js           local dev server: serves the site and runs api/ (npm start)
 .env.example        template for .env (the real .env is never committed)
 ```
@@ -68,7 +70,7 @@ server.js           local dev server: serves the site and runs api/ (npm start)
 - Keep the forecast math simple and explainable. Every factor shows up as a "why" line in the UI.
 
 ## Data honesty (this matters for judging)
-- Anything that isn't real must be labeled: mark placeholder events "(sample)" and keep the "sample" badges.
+- Anything that isn't real must be labeled: keep the "sample" badges. Prefer adding a calendar source over hardcoding events (permanent events live in `FIXED_EVENTS` in `js/config.js`).
 - Never present estimated savings as exact numbers.
 - Food-safety limits (how long boba and fruit stay good) come from the shop, never from us.
 - Never commit API keys. The AI key lives in your local `.env` (and later in Vercel's environment variables) as `ANTHROPIC_API_KEY`.

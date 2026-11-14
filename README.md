@@ -14,8 +14,8 @@ Cut fruit toppings spoil too.
   - the Princeton calendar: breaks, reading period and exams, athletics, town and student events, club competitions
   - a correction learned from the nightly closing log
 - **Explains every forecast**: each factor shows as a "why" line (e.g. `85 × 0.71 × 1.10 ≈ 66 customers`).
-- **Prep plan**: when to cook boba and how much (small batches timed so pearls run out before they harden), how much fruit to cut, how many froyo machines to run.
-- **Events calendar**: add events by hand, or paste any calendar page and AI pulls out the dated events.
+- **Prep plan**: when to cook boba and how much (small batches timed so pearls run out before they harden), how much fruit to cut, how many froyo machines to run. Each plan also has a busy-day backup ("if it's busier than expected, add a ¼ batch at 7 PM"), and the closing log asks whether you ran out of boba.
+- **Events calendar**: no hardcoded events. A list of calendar sources (Princeton Athletics, Palmer Square, Planet Princeton, an academic calendar page) is read on the server: `.ics` feeds are parsed directly and ordinary web pages are read by AI. Add your own source links on the Events tab, add events by hand, or paste calendar text for the AI to read.
 - **Closing log**: staff enter customers and what got thrown out (30 seconds). The forecast adjusts and the waste chart tracks progress.
 
 ## Run it locally
@@ -41,7 +41,7 @@ Staff pages open only on a **paired device**. The owner enters the PIN once on e
 
 ## Honest notes
 - Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings.
-- Events marked "(sample)" are placeholders. Thanksgiving recess dates should be confirmed with the Princeton Registrar.
+- Some events are read from web pages by AI, so check the dates. The academic calendar source is a third-party page (the Princeton Registrar blocks automated access), so confirm break dates with the Registrar.
 - Savings shown are **estimates**. Food-safety limits come from the shop.
 - Data is shared through Turso when the server is running. On plain static hosting it falls back to this browser only.
 

@@ -43,8 +43,10 @@ export function forecast(day, events, s) {
     brk ? { label: `${TYPES.break.icon} ${brk.label}`, m: TYPES.break.mult } : { label: "🎓 Students on campus", m: 1 }
   ];
   if (day.rain) f.push({ label: "☔ Rain or snow", mf: RAIN.froyo, mt: RAIN.tea });
-  evs.filter(e => e.type !== "break").forEach(e =>
-    f.push({ label: `${TYPES[e.type].icon} ${e.label} · ${WHEN[e.when].name.toLowerCase()} (${e.source})`, m: TYPES[e.type].mult }));
+  const byType = {};        // several events of one type on a day (e.g. 4 home games) make one row
+  evs.filter(e => e.type !== "break").forEach(e => (byType[e.type] ||= []).push(e));
+  Object.entries(byType).forEach(([t, list]) =>
+    f.push({ label: `${TYPES[t].icon} ${list[0].label}${list.length > 1 ? ` + ${list.length - 1} more` : ""} · ${WHEN[list[0].when].name.toLowerCase()}`, m: TYPES[t].mult }));
   if (Math.abs(s.calib - 1) > 0.01) f.push({ label: "📝 Adjusted from your closing logs", m: s.calib });
   const mult = key => f.slice(1).reduce((acc, x) => acc * (x[key] ?? x.m), 1);
   const froyoMult = mult("mf"), teaMult = mult("mt");
@@ -109,18 +111,32 @@ export function bobaDemand(fc, day, events, s) {
   return hf.map((x, i) => x * (s.bobaShareFroyo ?? 0.05) + ht[i] * (s.bobaShareTea ?? 0.7));
 }
 
-// Boba plan: cook only when stock runs short, sized in quarter batches to the next few hours
+// Cook only when stock runs short, sized in quarter batches to the next few hours
+const cook = (demand, s) => simulate(demand, s, (i, h, have) => {
+  if (demand[i] <= have + 0.01) return 0;
+  const ahead = demand.slice(i, i + s.bobaHours).reduce((a, b) => a + b, 0) - have;
+  return Math.min(1, Math.max(0.25, Math.ceil((ahead / s.drinksPerBatch) * 4) / 4));
+});
+
+// Boba plan, plus a backup: what to add if the day turns out busier than expected (s.cushion = how much busier).
+// busyFc is the forecast scaled up by the cushion, so the caller can size fruit and froyo for a busy day too.
 export function bobaPlan(fc, day, events, s) {
   const demand = bobaDemand(fc, day, events, s);
-  const plan = simulate(demand, s, (i, h, have) => {
-    if (demand[i] <= have + 0.01) return 0;
-    const ahead = demand.slice(i, i + s.bobaHours).reduce((a, b) => a + b, 0) - have;
-    return Math.min(1, Math.max(0.25, Math.ceil((ahead / s.drinksPerBatch) * 4) / 4));
-  });
+  const plan = cook(demand, s);
   const n = Math.max(1, s.oldBatches);
   const times = Array.from({ length: n }, (_, k) => HOURS[Math.floor((k * HOURS.length) / n)]);
   const old = simulate(demand, s, (i, h) => (times.includes(h) ? 1 : 0));
-  return { ...plan, oldTossed: old.tossed };
+
+  const up = 1 + (s.cushion ?? 0.2);
+  const { froyo, tea } = split(fc, s);
+  const busyFc = { froyo: froyo * up, tea: tea * up };
+  const busyCustomers = Math.round((froyo + tea) * up);
+  const busy = cook(bobaDemand(busyFc, day, events, s), s);
+  const base = Object.fromEntries(plan.batches.map(b => [b.h, b.size]));
+  const backup = busy.batches
+    .map(b => ({ h: b.h, size: +(b.size - (base[b.h] || 0)).toFixed(2) }))
+    .filter(b => b.size > 0.01);
+  return { ...plan, oldTossed: old.tossed, busyCustomers, busyFc, backup };
 }
 
 // Fresh fruit goes on froyo cups only

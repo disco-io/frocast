@@ -10,6 +10,7 @@ export const DEFAULTS = {
   oldBatches: 2,        // current routine: full batches per day
   fruitShare: 0.4,      // share of froyo cups with fresh fruit
   cupsPerContainer: 25, // fruit cups one cut container covers
+  cushion: 0.2,         // how much busier than forecast the backup plan covers (0.2 = 20% more customers)
   calib: 1.0            // learned correction from closing logs
 };
 
@@ -22,7 +23,8 @@ export const SETTING_FIELDS = [
   ["bobaHours", "Hours cooked boba stays good", 1, 1, 12],
   ["oldBatches", "Current routine: full batches per day", 1, 1, 10],
   ["fruitShare", "Share of froyo cups with fresh fruit", 0.05, 0, 1],
-  ["cupsPerContainer", "Fruit cups per cut container", 1, 1, 200]
+  ["cupsPerContainer", "Fruit cups per cut container", 1, 1, 200],
+  ["cushion", "Busy-day backup: how much busier to plan for (0.2 = 20% more)", 0.05, 0, 1]
 ];
 
 // Shop hours (10 AM – 11 PM) and the usual shape of a day (evening-heavy)
@@ -55,14 +57,24 @@ export const WHEN = {
   late:      { name: "Late night", hours: [20, 21, 22] }
 };
 
-// Starting events. Anything marked "(sample)" is a placeholder to replace.
-export const DEFAULT_EVENTS = [
-  { from: "2026-11-14", to: "2026-11-15", label: "HackPrinceton", type: "competition", when: "late", source: "Student org" },
-  { from: "2026-11-20", to: "2026-11-20", label: "A cappella concert (sample)", type: "student", when: "evening", source: "Student events" },
-  { from: "2026-11-21", to: "2026-11-21", label: "Home football game (sample)", type: "athletics", when: "afternoon", source: "Athletics" },
-  { from: "2026-11-22", to: "2026-11-22", label: "Holiday market downtown (sample)", type: "town", when: "afternoon", source: "Town events" },
-  { from: "2026-11-25", to: "2026-11-29", label: "Thanksgiving recess", type: "break", when: "all", source: "Registrar" }
+// No hardcoded events: they are read from these sources by "Sync" (feeds are parsed, web pages are read by AI).
+// hint "athletics" keeps home games only. Add or remove sources on the Events tab.
+export const DEFAULT_SOURCES = [
+  { id: "athletics", name: "Princeton Athletics", url: "https://goprincetontigers.com/calendar.ashx/calendar.ics", hint: "athletics" },
+  { id: "palmer", name: "Palmer Square events", url: "https://palmersquare.com/events/?ical=1", hint: "town" },
+  { id: "planet", name: "Planet Princeton events", url: "https://planetprinceton.com/events/?ical=1", hint: "town" },
+  { id: "acad", name: "Academic calendar (third-party, unverified)", url: "https://acadcalendar.com/princeton-academic-calendar/", hint: "academic" }
 ];
+
+// Fixed events: always present, not read by Sync, can't be deleted on the Events tab. Edit them here.
+export const FIXED_EVENTS = [
+  { id: "hackprinceton", from: "2026-11-13", to: "2026-11-15", label: "HackPrinceton", type: "competition", when: "late",
+    source: "HackPrinceton", url: "https://www.hackprinceton.com/" }
+];
+
+// Old hardcoded starter events: dropped from browsers that saved them
+export const LEGACY_LABELS = ["HackPrinceton", "A cappella concert (sample)", "Home football game (sample)",
+  "Holiday market downtown (sample)", "Thanksgiving recess", "Thanksgiving recess (verify with Registrar)"];
 
 // Shop location (Nassau St, Princeton) for the weather forecast
 export const LOCATION = { lat: 40.3508, lon: -74.6565 };

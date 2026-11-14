@@ -83,3 +83,19 @@ input[type=number], input[type=text], input[type=date], select { font: inherit; 
 .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
 textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; resize: vertical; width: 100%; }
 td.nowrap { white-space: nowrap; }
+
+.src-add { display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 10px; align-items: end; margin-top: 16px; }
+.src-add label { font-weight: 600; font-size: 13px; display: grid; gap: 5px; }
+@media (max-width: 860px) { .src-add { grid-template-columns: 1fr; } }
+a { color: var(--blue); }
+.backup { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e8b9ca; font-size: 13px; color: #6b2342; }
+
+.level { font-size: 14px; font-weight: 700; padding: 5px 12px; border-radius: 99px; align-self: center; }
+.lv-hot { background: #fbe3e1; color: #b03a30; }
+.lv-warm { background: var(--amberSoft); color: #8a5a07; }
+.lv-ok { background: var(--mintSoft); color: #1f6e57; }
+.lv-cool { background: var(--blueSoft); color: var(--blue); }
+.lv-cold { background: #eceff3; color: #5b6472; }
+.level.sm { font-size: 12px; padding: 3px 10px; white-space: nowrap; }
+.level.xs { font-size: 10px; padding: 2px 7px; white-space: nowrap; display: inline-block; margin-top: 3px; }
+.day { min-width: 96px; }

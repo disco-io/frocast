@@ -36,7 +36,7 @@
       <div style="display:grid; gap:16px">
         <div class="card">
           <h2 id="dayTitle">Forecast</h2>
-          <div class="big"><span class="num" id="cust">–</span><span class="lbl">expected customers</span></div>
+          <div class="big"><span class="num" id="cust">–</span><span class="lbl">expected customers</span><span class="level" id="level"></span></div>
           <div class="cmp" id="cmp"></div>
           <div class="weather" id="wx"></div>
           <div class="why" id="why"></div>
@@ -73,7 +73,18 @@
     <div class="card" style="margin-bottom:16px">
       <h2>Events that change how busy the shop is</h2>
       <table id="evTable"></table>
-      <div class="note">Sources: Princeton Registrar (breaks, reading period, exams), Princeton Athletics, town and Palmer Square listings, and student organization calendars. Items marked "sample" are placeholders.</div>
+      <div class="note">Events are read from the calendar sources below. Anything you add by hand or paste is kept as is.</div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h2>Calendar sources · updated automatically</h2>
+      <table id="srcTable"></table>
+      <div class="toast" id="syncMsg" style="margin-top:10px"></div>
+      <form class="src-add" id="srcForm">
+        <label>Name <input type="text" id="sName" placeholder="e.g. HackPrinceton"></label>
+        <label>Link to a calendar feed (.ics) or any page that lists dates <input type="text" id="sUrl" placeholder="https://…" required></label>
+        <label>Type <select id="sHint"><option value="">General</option><option value="athletics">Athletics (home games only)</option><option value="academic">Academic calendar</option></select></label>
+        <button class="btn" type="submit">Add source</button>
+      </form>
     </div>
     <div class="grid">
       <div class="card">
@@ -116,6 +127,8 @@
             <select id="lBoba"><option value="0">None</option><option value="0.25">A little (≈¼ batch)</option><option value="0.5">Half a batch</option><option value="1">A full batch</option></select></label>
           <label>Fruit thrown out
             <select id="lFruit"><option value="0">None</option><option value="0.5">Some</option><option value="1">A lot</option></select></label>
+          <label>Did you run out of boba?
+            <select id="lRan"><option value="">No</option><option value="afternoon">Yes, in the afternoon (before 5 PM)</option><option value="evening">Yes, in the evening (5–8 PM)</option><option value="late">Yes, late (after 8 PM)</option></select></label>
           <button class="btn" type="submit">Save today</button>
           <div class="toast" id="toast"></div>
         </form>
@@ -145,7 +158,7 @@
     </div>
   </section>
 
-  <div class="note">Sales numbers are sample estimates until the shop's real numbers are entered. Events marked "sample" are placeholders.</div>
+  <div class="note">Sales numbers are sample estimates until the shop's real numbers are entered. Events come from the sources listed on the Events tab.</div>
 </div>
 
 <script type="module" src="js/app.js"></script>

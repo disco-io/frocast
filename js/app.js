@@ -1,26 +1,42 @@
-import { DEFAULTS, SETTING_FIELDS, HOURS, TYPES, WHEN, DEFAULT_EVENTS, LOCATION } from "./config.js";
+import { DEFAULTS, SETTING_FIELDS, HOURS, TYPES, WHEN, DEFAULT_SOURCES, FIXED_EVENTS, LEGACY_LABELS, LOCATION } from "./config.js";
 import { DOW, MON, iso, dayEvents, isBreak, tempFactor, forecast, hourly, bobaPlan, fruitPlan, machines } from "./model.js";
 import { getWeather } from "./weather.js";
 import * as store from "./store.js";
 
 // ---------------- State ----------------
+// FIXED_EVENTS are always present (first in the list) and can't be deleted; any saved copy of one is dropped
+function withFixed(list) {
+  return [...FIXED_EVENTS.map(e => ({ ...e, fixed: true })),
+    ...list.filter(e => !e.fixed && !FIXED_EVENTS.some(f => f.id === e.id || (f.from === e.from && f.label.toLowerCase() === e.label.toLowerCase())))];
+}
+
 const saved = store.load();
 const st = {
   s: { ...structuredClone(DEFAULTS), ...(saved.s || {}), base: { ...DEFAULTS.base, ...(saved.s?.base || {}) } },
-  events: saved.events || structuredClone(DEFAULT_EVENTS),
+  events: withFixed((saved.events || []).filter(e => saved.v === 2 || !LEGACY_LABELS.includes(e.label))),
+  sources: saved.sources || structuredClone(DEFAULT_SOURCES),   // calendars read by Sync
+  sync: saved.sync || {},          // per source: last sync time, method, count, error
   logs: saved.logs || [],          // real closing logs
   showSample: saved.showSample ?? true,
   days: [],
   live: false,
   sel: 0
 };
-const persist = opts => store.save({ s: st.s, events: st.events, logs: st.logs, showSample: st.showSample }, opts);
+const persist = opts => store.save({ v: 2, s: st.s, events: st.events.filter(e => !e.fixed), sources: st.sources, sync: st.sync, logs: st.logs, showSample: st.showSample }, opts);
 
 const $ = id => document.getElementById(id);
 const esc = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmtH = h => `${((h + 11) % 12) + 1}:00 ${h < 12 ? "AM" : "PM"}`;
 const fmtM = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 const SIZE = { 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "full" };
+// How busy a day is, compared with the average of the next 14 days (min = lowest share of that average for the level)
+const LEVELS = [
+  { min: 1.25, name: "Very busy", cls: "lv-hot" },
+  { min: 1.05, name: "Busy", cls: "lv-warm" },
+  { min: 0.85, name: "Slightly busy", cls: "lv-ok" },
+  { min: 0.6, name: "Not busy", cls: "lv-cool" },
+  { min: 0, name: "Very slow", cls: "lv-cold" }
+];
 const shortDate = d => `${DOW[d.getDay()]} ${MON[d.getMonth()]} ${d.getDate()}`;
 
 function today() {
@@ -29,14 +45,20 @@ function today() {
 }
 
 // ---------------- Today ----------------
+const avgCust = () => st.days.reduce((a, x) => a + forecast(x, st.events, st.s).customers, 0) / Math.max(st.days.length, 1);
+const levelOf = (customers, avg) => LEVELS.find(l => customers / Math.max(avg, 1) >= l.min);
+const uniq = list => [...new Set(list)];
+
 function renderDays() {
+  const avg = avgCust();
   $("days").innerHTML = st.days.map((d, i) => {
     const f = forecast(d, st.events, st.s).customers;
-    const icons = isBreak(st.events, d.key) ? "BREAK" : dayEvents(st.events, d.key).map(e => TYPES[e.type].icon).join(" ");
+    const icons = isBreak(st.events, d.key) ? "BREAK" : uniq(dayEvents(st.events, d.key).map(e => TYPES[e.type].icon)).join(" ");
     return `<div class="day ${i === st.sel ? "on" : ""}" data-i="${i}">
       <div class="d">${i === 0 ? "Today" : DOW[d.date.getDay()]} ${d.date.getDate()}</div>
       <div class="t">${d.temp}°F</div>
       <div class="c" title="Expected customers">👥 ${f}</div>
+      <div><span class="level xs ${levelOf(f, avg).cls}">${levelOf(f, avg).name}</span></div>
       <div class="flag">${icons || "&nbsp;"}</div></div>`;
   }).join("");
   document.querySelectorAll(".day").forEach(el => el.addEventListener("click", () => {
@@ -54,6 +76,12 @@ function renderToday() {
 
   $("dayTitle").textContent = `${dow}, ${MON[d.getMonth()]} ${d.getDate()}`;
   $("cust").textContent = fc.customers;
+  const avg = avgCust();
+  const ratio = fc.customers / Math.max(avg, 1);
+  const lv = levelOf(fc.customers, avg);
+  $("level").textContent = lv.name;
+  $("level").className = `level ${lv.cls}`;
+  $("level").title = `${Math.round(ratio * 100)}% of the 2-week average (${Math.round(avg)} customers)`;
   const drop = Math.round((1 - fc.customers / fc.base) * 100);
   $("cmp").innerHTML = (drop > 0
     ? `<b>${drop}% fewer</b> than a typical warm ${dow} (${fc.base})`
@@ -75,16 +103,23 @@ function renderToday() {
   const bp = bobaPlan(fc, day, st.events, st.s);
   const fp = fruitPlan(fc, st.s);
   const mach = machines(fc.froyo);
+  const machBusy = machines(Math.round(bp.busyFc.froyo));
+  const moreFruit = fruitPlan(bp.busyFc, st.s).containers - fp.containers;
+  const pct = Math.round((st.s.cushion ?? 0.2) * 100);
   const cookAt = h => fmtM(h * 60 - (st.s.cookLead ?? 45));
   const savedDrinks = Math.max(0, Math.round(bp.oldTossed - bp.tossed));
   $("prep").innerHTML = `
     <div class="item boba"><h3>🧋 Boba: cook ${Math.round(bp.cooked)} drinks' worth, in ${bp.batches.length} small batch${bp.batches.length === 1 ? "" : "es"}</h3>
       <ul>${bp.batches.map(b => `<li><b>Start ${cookAt(b.h)}</b> (ready ${fmtH(b.h)}): ${SIZE[b.size]} batch (~${Math.round(b.drinks)} drinks)</li>`).join("") || "<li>No boba needed</li>"}</ul>
+      <div class="backup"><b>If it's busier than expected</b> (~${bp.busyCustomers} customers, +${pct}%): ${bp.backup.length
+        ? Object.entries(bp.backup.reduce((g, b) => ((g[b.size] ||= []).push(cookAt(b.h)), g), {}))
+          .map(([size, starts]) => `add a ${SIZE[size]} batch, start ${starts.join(", ")}`).join("; ")
+        : "no extra boba needed"}</div>
       <div class="saved">Est. tossed: ~${Math.round(bp.tossed)} drinks' worth, vs. ~${Math.round(bp.oldTossed)} with ${st.s.oldBatches} full batch${st.s.oldBatches === 1 ? "" : "es"} (saves ~${savedDrinks})</div></div>
     <div class="item fruit"><h3>🍓 Fruit: cut ${fp.containers} container${fp.containers === 1 ? "" : "s"} per fruit</h3>
-      <ul><li>~${Math.round(fp.cups)} cups expected to add fresh fruit</li><li>Cut half at open, the rest when it runs low</li></ul></div>
+      <ul><li>~${Math.round(fp.cups)} cups expected to add fresh fruit</li><li>Cut half at open, the rest when it runs low</li>${moreFruit > 0 ? `<li>If busier: have ${moreFruit} more container${moreFruit === 1 ? "" : "s"} ready to cut</li>` : ""}</ul></div>
     <div class="item yo"><h3>🍦 Froyo: run ${mach} of 5 machines</h3>
-      <ul><li>${mach < 5 ? "Pause the slowest flavors until it warms up" : "Busy day: run all machines"}</li><li>Keep your usual winter fill levels</li></ul></div>`;
+      <ul><li>${mach < 5 ? "Pause the slowest flavors until it warms up" : "Busy day: run all machines"}</li><li>Keep your usual winter fill levels</li>${machBusy > mach ? `<li>If busier: turn on ${machBusy} machines</li>` : ""}</ul></div>`;
 
   drawHourly(hourly(fc.froyo, day, st.events), hourly(fc.tea, day, st.events), bp.batches);
 }
@@ -116,6 +151,7 @@ function drawHourly(hf, ht, batches) {
 function renderOutlook() {
   const fcs = st.days.map(d => forecast(d, st.events, st.s));
   const vals = fcs.map(f => f.customers);
+  const avg = avgCust();
   const n = st.days.length;
   const W = 900, H = 230, L = 34, B = 34, max = Math.max(...vals, 10) * 1.15, bw = (W - L - 10) / n;
   let svg = "";
@@ -138,14 +174,17 @@ function renderOutlook() {
   $("outChart").innerHTML = svg;
 
   $("outTable").innerHTML =
-    `<tr><th>Day</th><th>Weather</th><th>Events</th><th>Customers</th><th>Boba batches</th><th>Fruit containers</th></tr>` +
+    `<tr><th>Day</th><th>Weather</th><th>Events</th><th>Customers</th><th>Busyness</th><th>Boba batches</th><th>Fruit containers</th></tr>` +
     st.days.map((d, i) => {
       const c = vals[i];
       const bp = bobaPlan(fcs[i], d, st.events, st.s);
-      const notes = dayEvents(st.events, d.key)
-        .map(e => `<span class="pill ${e.type === "break" ? "brk" : "ev"}">${TYPES[e.type].icon} ${esc(e.label)}</span>`).join(" ");
+      const byType = {};   // one tag per event type (icon shown once); extra events counted as "+ N more"
+      dayEvents(st.events, d.key).forEach(e => (byType[e.type] ||= []).push(e));
+      const notes = Object.entries(byType).map(([t, list]) =>
+        `<span class="pill ${t === "break" ? "brk" : "ev"}" title="${esc(list.map(e => e.label).join(", "))}">${TYPES[t].icon} ${esc(list[0].label)}${list.length > 1 ? ` + ${list.length - 1} more` : ""}</span>`).join(" ");
+      const lv = levelOf(c, avg);
       return `<tr><td class="nowrap">${shortDate(d.date)}</td><td>${d.temp}°F · ${d.cond}</td><td>${notes}</td>
-        <td class="n"><b>${c}</b> <span style="color:var(--muted)">(${fcs[i].froyo} froyo · ${fcs[i].tea} tea)</span></td><td class="n">${bp.batches.map(b => SIZE[b.size]).join(", ") || "–"}</td>
+        <td class="n"><b>${c}</b> <span style="color:var(--muted)">(${fcs[i].froyo} froyo · ${fcs[i].tea} tea)</span></td><td><span class="level sm ${lv.cls}">${lv.name}</span></td><td class="n">${bp.batches.map(b => SIZE[b.size]).join(", ") || "–"}</td>
         <td class="n">${fruitPlan(fcs[i], st.s).containers}</td></tr>`;
     }).join("");
 }
@@ -154,15 +193,99 @@ function renderOutlook() {
 function renderEvents() {
   const rows = st.events.map((e, i) => ({ ...e, i })).sort((a, b) => a.from.localeCompare(b.from));
   $("evTable").innerHTML =
-    `<tr><th>Dates</th><th>Event</th><th>Type</th><th>When</th><th>Source</th><th>Effect</th><th></th></tr>` +
-    rows.map(e => `<tr><td class="nowrap">${e.from === e.to ? e.from : e.from + " → " + e.to}</td><td>${esc(e.label)}</td>
-      <td>${TYPES[e.type].icon} ${TYPES[e.type].name}</td><td>${WHEN[e.when].name}</td><td>${esc(e.source)}</td>
-      <td class="n">×${TYPES[e.type].mult.toFixed(2)}</td>
-      <td><button class="reset" data-del="${e.i}" title="Remove">✕</button></td></tr>`).join("");
+    `<tr><th>Dates</th><th>Event</th><th>Type</th><th>When</th><th>Source</th><th></th></tr>` +
+    (rows.map(e => `<tr><td class="nowrap">${e.from === e.to ? e.from : e.from + " → " + e.to}</td><td>${esc(e.label)}</td>
+      <td>${TYPES[e.type].icon} ${TYPES[e.type].name}</td><td>${WHEN[e.when].name}</td>
+      <td>${/^https?:/.test(e.url || "") ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.source)}</a>` : esc(e.source)}</td>
+      <td>${e.fixed ? "" : `<button class="reset" data-del="${e.i}" title="Remove">✕</button>`}</td></tr>`).join("") ||
+      `<tr><td colspan="6" class="note">No events yet. They load automatically from the calendar sources below, or add one by hand.</td></tr>`);
   document.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
     st.events.splice(+b.dataset.del, 1);
     changed();
   }));
+}
+
+// ---------------- Calendar sources ----------------
+const evKey = e => `${e.from}|${e.label.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+const ago = t => {
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? "just now" : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
+};
+
+function renderSources() {
+  $("srcTable").innerHTML = `<tr><th>Source</th><th>Status</th><th>Events</th><th></th></tr>` +
+    st.sources.map((s, i) => {
+      const r = st.sync[s.id] || {};
+      const n = st.events.filter(e => e.sid === s.id).length;
+      const status = r.error ? `<span style="color:var(--red)" title="${esc(r.error)}">⚠ ${esc(r.error)}</span>`
+        : r.at ? `✓ ${r.method} · ${ago(r.at)}` : '<span class="note" style="margin:0">not synced yet</span>';
+      return `<tr><td><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a></td><td>${status}</td>
+        <td class="n">${n}</td><td><button class="reset" data-rm="${i}" title="Remove source">✕</button></td></tr>`;
+    }).join("");
+  document.querySelectorAll("[data-rm]").forEach(b => b.addEventListener("click", () => {
+    const s = st.sources.splice(+b.dataset.rm, 1)[0];
+    st.events = st.events.filter(e => e.sid !== s.id);
+    delete st.sync[s.id];
+    changed();
+  }));
+}
+
+// Server reads every source (feeds parsed, pages read by AI); each source's events are replaced on sync.
+// Runs automatically: on every page load, every 30 minutes, and when a source is added.
+let syncing = false;
+async function syncAll() {
+  if (syncing) return;
+  syncing = true;
+  const msg = $("syncMsg");
+  say(msg, "Updating events…", "muted");
+  try {
+    const res = await fetch("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sources: st.sources, today: iso(today()) })
+    });
+    if (!res.ok) throw new Error([404, 405, 501].includes(res.status) ? "no-api" : `Sync failed (${res.status})`);
+    const { results } = await res.json();
+    st.events = st.events.filter(e => !results.some(r => r.ok && r.id === e.sid));
+    const seen = new Set(st.events.map(evKey));
+    let added = 0;
+    for (const r of results) {
+      const src = st.sources.find(s => s.id === r.id);
+      if (!src) continue;
+      if (!r.ok) {
+        st.sync[r.id] = { ...(st.sync[r.id] || {}), error: r.error };
+        continue;
+      }
+      st.sync[r.id] = { at: Date.now(), method: r.method, count: r.events.length };
+      for (const e of r.events) {
+        if (seen.has(evKey(e))) continue;
+        seen.add(evKey(e));
+        st.events.push({ ...e, source: src.name, url: src.url, sid: src.id, method: r.method });
+        added++;
+      }
+    }
+    const bad = results.filter(r => !r.ok).length;
+    changed();
+    say(msg, bad ? `Updated, but ${bad} of ${results.length} sources failed (see above).` : "Events up to date.", bad ? "red" : "mint");
+  } catch (err) {
+    say(msg, err.message === "no-api"
+      ? "Events can't update: stop the current server and run `npm start`."
+      : "Couldn't update events. Will try again in a few minutes.", "red");
+  } finally {
+    syncing = false;
+  }
+}
+
+function initSources() {
+  $("srcForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const url = $("sUrl").value.trim();
+    if (!/^https?:\/\//.test(url)) { say($("syncMsg"), "The link must start with http:// or https://", "red"); return; }
+    st.sources.push({ id: "s" + Date.now().toString(36), name: $("sName").value.trim() || new URL(url).hostname, url, hint: $("sHint").value });
+    $("sName").value = $("sUrl").value = "";
+    changed();
+    syncAll();
+  });
 }
 
 function initEventForms() {
@@ -274,6 +397,12 @@ function renderLog() {
     ${before.length && after.length ? `<p style="margin:0 0 8px">Boba thrown out: <b>${avg(before).toFixed(2)}</b> batches/day before → <b>${avg(after).toFixed(2)}</b> with FroCast.</p>` : ""}
     <p style="margin:0;color:var(--muted)">Each saved log nudges the forecast toward this shop's real numbers.${hasSample ? " Faded bars are sample history." : ""}</p>`
     : `<p style="margin:0;color:var(--muted)">Save a closing log to start tracking accuracy and waste.</p>`;
+  // stockouts come from real logs only (sample history doesn't record them)
+  const mine = st.logs.slice(-7), ranOut = mine.filter(l => l.ran).length;
+  if (mine.length) {
+    $("acc").innerHTML += `<p style="margin:10px 0 0">Ran out of boba on <b>${ranOut}</b> of the last ${mine.length} logged day${mine.length === 1 ? "" : "s"}.${ranOut >= 2
+      ? ' <b style="color:var(--red)">Consider raising the busy-day backup in Settings</b> so the plan prepares for busier days.' : ""}</p>`;
+  }
 }
 
 function initLog() {
@@ -290,8 +419,9 @@ function initLog() {
     const ratio = Math.min(2, Math.max(0.5, cust / Math.max(predicted, 1)));
     st.s.calib = +(st.s.calib * (1 + 0.2 * (ratio - 1))).toFixed(3);   // learn gently: 20% of the gap
     st.logs = st.logs.filter(l => l.key !== key);
-    st.logs.push({ key, customers: cust, predicted, boba: +$("lBoba").value, fruit: +$("lFruit").value, planner: true });
-    say($("toast"), `Saved. Forecast was ${predicted}, actual ${cust}. Future forecasts adjusted ×${st.s.calib.toFixed(2)}.`, "mint");
+    const ran = $("lRan").value;   // "" = didn't run out, else when in the day
+    st.logs.push({ key, customers: cust, predicted, boba: +$("lBoba").value, fruit: +$("lFruit").value, ran, planner: true });
+    say($("toast"), `Saved. Forecast was ${predicted}, actual ${cust}. Future forecasts adjusted ×${st.s.calib.toFixed(2)}.${ran ? " Noted that you ran out of boba." : ""}`, "mint");
     changed();
   });
   $("clearSample").addEventListener("click", () => {
@@ -320,7 +450,9 @@ function initSettings() {
   $("resetAll").addEventListener("click", () => {
     store.clear();
     st.s = structuredClone(DEFAULTS);
-    st.events = structuredClone(DEFAULT_EVENTS);
+    st.events = st.events.filter(e => e.fixed);
+    st.sources = structuredClone(DEFAULT_SOURCES);
+    st.sync = {};
     st.logs = [];
     st.showSample = true;
     changed();
@@ -334,6 +466,7 @@ function changed(opts) {
   renderToday();
   renderOutlook();
   renderEvents();
+  renderSources();
   renderLog();
 }
 
@@ -348,6 +481,7 @@ function initTabs() {
 async function start() {
   initTabs();
   initEventForms();
+  initSources();
   initLog();
   initSettings();
   const [{ days, live }, remote] = await Promise.all([getWeather(today(), LOCATION), store.pull()]);
@@ -365,11 +499,13 @@ async function start() {
     renderSettings();
     changed({ push: false });
   });
+  syncAll();                                  // always read the calendars on load...
+  setInterval(syncAll, 30 * 60 * 1000);       // ...and keep them fresh while the page stays open
 }
 
 function useShared(shared) {
   if (shared.s) st.s = { ...structuredClone(DEFAULTS), ...shared.s, base: { ...DEFAULTS.base, ...(shared.s.base || {}) } };
-  if (shared.events) st.events = shared.events;
+  if (shared.events) st.events = withFixed(shared.events);   // fixed events are never stored in the shared copy
   if (shared.logs) st.logs = shared.logs;
   if (shared.showSample !== undefined) st.showSample = shared.showSample;
 }
