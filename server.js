@@ -114,6 +114,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const set = k && k !== "paste-your-key-here";
     console.log(`FroCast running at http://localhost:${PORT}`);
     console.log(set ? "AI import: key found" : "AI import: no key yet (edit .env), everything else works");
-    console.log(`Data: ${process.env.TURSO_DATABASE_URL ? "Turso" : "local.db file"} · owner PIN: ${process.env.OWNER_PIN ? "from .env" : "0000 (local default)"}`);
+    const dbUrl = process.env.TURSO_DATABASE_URL || "";
+    console.log(`Data: ${dbUrl && !dbUrl.startsWith("file:") ? "Turso" : "local file"} · owner PIN: ${process.env.OWNER_PIN ? "set" : "0000 (local default)"}`);
   });
 }

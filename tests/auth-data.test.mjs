@@ -85,6 +85,21 @@ test("shared data round-trips between two paired devices", async () => {
   assert.equal(got.state.events[0].label, "Penn game");
 });
 
+test("saves from a stale device merge instead of overwriting", async () => {
+  const tablet = await pair("Tablet", "10.0.0.8");
+  const phone = await pair("Phone", "10.0.0.8");
+  const put = (who, body) => fetch(`${base}/api/data`, { method: "PUT", headers: { "content-type": "application/json", cookie: who.cookie }, body: JSON.stringify(body) }).then(r => r.json());
+  const morning = (await (await fetch(`${base}/api/data`, { headers: { cookie: tablet.cookie } })).json()).state;
+  const concert = { from: "2026-11-20", to: "2026-11-20", label: "Concert", type: "student", when: "evening", source: "phone" };
+  await put(phone, { base: morning, state: { ...morning, events: [...(morning.events || []), concert] } });
+  const night = { ...morning, logs: [{ key: "2026-11-14", customers: 61, predicted: 56, boba: 0.25, fruit: 0, planner: true }] };
+  const merged = (await put(tablet, { base: morning, state: night })).state;
+  assert.ok(merged.events.some(e => e.label === "Concert"), "phone's event survives the tablet's save");
+  assert.ok(merged.logs.some(l => l.customers === 61), "tablet's log is saved");
+  const shared = (await (await fetch(`${base}/api/data`, { headers: { cookie: phone.cookie } })).json()).state;
+  assert.deepEqual(shared, merged);
+});
+
 test("a tampered device cookie is refused", async () => {
   const { cookie } = await pair("Tablet", "10.0.0.4");
   const bad = cookie.replace(/fc_device=([^;]+)/, (m, v) => `fc_device=${v.slice(0, -2)}xx`);
