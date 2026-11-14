@@ -17,7 +17,7 @@ process.env.TOPPING_CAMERA = "1";
 process.env.REQUIRE_PAIRING = "1";   // these tests cover the PIN screen, which is off by default locally
 process.env.CRON_SECRET = "cron-test";
 delete process.env.VERCEL;
-delete process.env.ANTHROPIC_API_KEY;
+process.env.ANTHROPIC_API_KEY = ""; // empty, not deleted: server.js would otherwise load a real key from .env and make a billed call
 
 const { createServer } = await import("../server.js");
 const { ready } = await import("../api/_lib/db.js");
