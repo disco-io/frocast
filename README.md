@@ -19,22 +19,31 @@ Cut fruit toppings spoil too.
 - **Closing log**: staff enter customers and what got thrown out (30 seconds). The forecast adjusts and the waste chart tracks progress.
 
 ## Run it locally
-No build step and no dependencies, just Node 20+:
+No build step, just Node 20+ and one dependency (Turso's database client):
 ```bash
+npm install
 cp .env.example .env     # then put your ANTHROPIC_API_KEY in .env (never commit it)
 npm start
-# open http://localhost:8000
+# open http://localhost:8000 and set up the device with the owner PIN (0000 unless OWNER_PIN is set)
+npm test                 # pairing, page gate and shared-data tests
 ```
-`server.js` serves the site and runs the `api/` functions, so the AI event import works locally. Without a key, everything else still works.
+`server.js` serves the site, runs the `api/` functions and the device-pairing check, and keeps data in a local `local.db` file unless `TURSO_*` is set. Without an AI key, everything except the AI event import still works.
 
-## Deploy (later)
-Import the repo in Vercel (no framework, no build command). Add `ANTHROPIC_API_KEY` under Project → Settings → Environment Variables. `api/events.js` runs there as is.
+## Deploy
+Import the repo in Vercel (no framework, no build command). Add these under Project → Settings → Environment Variables:
+- `ANTHROPIC_API_KEY`: AI event import
+- `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`: the shared database (create a free database at turso.tech)
+- `OWNER_PIN`: the PIN the owner types once per device
+- `DEVICE_SECRET`: a long random string that signs device cookies. Changing it un-pairs every device.
+
+## Devices and shared data
+Staff pages open only on a **paired device**. The owner enters the PIN once on each tablet or phone, and it stays set up for a year. Settings, events and closing logs are saved to Turso, so every paired device sees the same numbers. A copy stays in the browser, so a device that loses connection keeps working.
 
 ## Honest notes
 - Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings.
 - Events marked "(sample)" are placeholders. Thanksgiving recess dates should be confirmed with the Princeton Registrar.
 - Savings shown are **estimates**. Food-safety limits come from the shop.
-- Data is stored in the browser (localStorage). Sharing across staff devices would need a small database.
+- Data is shared through Turso when the server is running. On plain static hosting it falls back to this browser only.
 
 ## Team workflow
 Several people and coding agents work in this repo. See [AGENTS.md](AGENTS.md).
