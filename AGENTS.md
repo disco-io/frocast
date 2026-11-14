@@ -47,6 +47,7 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
 | Dzau (Claude) | BestTime hourly shape | new: `js/shape.js`, `api/shape.js`, `scripts/besttime.js`, `tests/shape.test.mjs`, `tests/besttime.test.mjs`; small edits in `js/model.js` (forecast weather row, hourly), `js/weather.js`, `js/config.js` (base, `settings()`), `js/app.js`, `js/clock.js` + `clock.html` + `js/strings.js` (shape, norm, Why line), `index.html`, `css/styles.css` | Sat 14:45 |
+| Dzau (Claude) | Two-bowl photo demo: line-up lock, before/after compare | new: `js/align.js`, `tests/align.test.mjs`, `tests/bowls.test.mjs`, `tools/testbar/bowls.mjs`; edits in `api/_lib/ai.js`, `api/vision.js`, `js/toppings.js`, `toppings.html`, `css/toppings.css`; small edits in `api/toppings.js`, `api/demo.js`, `api/_lib/shop-time.js`, `js/demo-data.js`, `js/strings.js` (new `top.*` keys), `tools/testbar/generate.mjs` (exports only) | Sat 17:40 |
 
 ## Project layout
 ```
