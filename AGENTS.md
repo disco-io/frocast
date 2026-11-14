@@ -46,7 +46,7 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 | Person / agent | Task | Files | Started |
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
-| Drew (Claude) | Boba batch clock, then topping photo check | new: `clock.html` `js/clock.js` `js/planner.js` `css/clock.css` `api/boba.js` `api/_lib/shop-time.js` `tests/planner.test.mjs` `tests/boba.test.mjs`; `db/schema.js`; `js/strings.js`; `index.html` (header link only) | Sat 16:10 |
+| Drew (Claude) | Topping photo check (steps 1–2), then demo slider | new: `toppings.html` `js/toppings.js` `js/toppings-math.js` `js/flags.js` `css/toppings.css` `api/toppings.js` `api/vision.js` `api/cron.js` `api/_lib/ai.js` `api/_lib/photos.js` `tests/toppings.test.mjs`; `db/schema.js` `js/strings.js` `vercel.json`; small: `js/config.js` (2 settings), `index.html` (link + flags script), `README.md` `.env.example` | Sat 17:00 |
 
 ## Project layout
 ```
