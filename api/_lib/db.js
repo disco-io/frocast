@@ -2,7 +2,7 @@
 // Production: set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Vercel.
 // Local: falls back to a SQLite file (local.db, gitignored).
 import { createClient } from "@libsql/client";
-import { SCHEMA } from "../../db/schema.js";
+import { SCHEMA, MIGRATIONS } from "../../db/schema.js";
 
 export const LOCATION = process.env.LOCATION_ID || "nassau-st";
 
@@ -18,9 +18,21 @@ export function db() {
   return client;
 }
 
-// Create tables on first use in each cold start.
+// Create tables, then add any newer columns, on first use in each cold start.
+// A column that already exists is fine (that migration ran before).
+async function migrate() {
+  await db().executeMultiple(SCHEMA);
+  for (const sql of MIGRATIONS) {
+    try {
+      await db().execute(sql);
+    } catch (err) {
+      if (!/duplicate column/i.test(err.message)) throw err;
+    }
+  }
+}
+
 export async function ready() {
-  if (!migrated) migrated = db().executeMultiple(SCHEMA).catch(err => { migrated = null; throw err; });
+  if (!migrated) migrated = migrate().catch(err => { migrated = null; throw err; });
   await migrated;
   return db();
 }

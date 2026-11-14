@@ -9,6 +9,7 @@ import { estimateBins, visionAvailable, PROBLEMS } from "./_lib/ai.js";
 import { toppingsEnabled, parseDataUrl, purgeOld } from "./_lib/photos.js";
 import { shopNow, isDay } from "./_lib/shop-time.js";
 import { isLevel } from "../js/toppings-math.js";
+import { DEMO_ESTIMATES } from "../js/demo-data.js";
 
 const CONF = ["low", "medium", "high"];
 
@@ -20,15 +21,24 @@ export default async function handler(req, res) {
     if (req.method !== "POST") return sendError(res, 405, "Use POST");
     const { kind, image } = req.body || {};
     if (!["open", "close"].includes(kind)) return sendError(res, 400, "kind must be open or close");
-    const photo = parseDataUrl(image);
-    if (!photo) return sendError(res, 400, "Send the photo as a data URL");
-    if (photo.tooBig) return sendError(res, 413, "Photo is too large");
+    const sample = req.body.scenario === "demo" && req.body.sample === true; // demo sample photo: no upload
+    const photo = sample ? null : parseDataUrl(image);
+    if (!sample && !photo) return sendError(res, 400, "Send the photo as a data URL");
+    if (photo?.tooBig) return sendError(res, 413, "Photo is too large");
 
     const db = await ready();
     const scenario = req.body.scenario === "demo" ? "demo" : "live";
     const day = scenario === "demo" && isDay(req.body.day) ? req.body.day : shopNow().day;
-    const bins = (await db.execute({ sql: "SELECT id, name, row_no, col_no FROM bins WHERE location_id = ? AND active = 1 ORDER BY row_no, col_no", args: [LOCATION] })).rows;
+    const bins = (await db.execute({ sql: "SELECT id, name, row_no, col_no FROM bins WHERE location_id = ? AND scenario = ? AND active = 1 ORDER BY row_no, col_no", args: [LOCATION, scenario] })).rows;
     if (!bins.length) return res.status(200).json({ available: false, reason: "no_bins" });
+    // Demo "sample photo": canned estimates for the placeholder pair (labeled simulated, never stored).
+    if (scenario === "demo" && req.body.sample === true) {
+      const canned = DEMO_ESTIMATES[kind] || {};
+      return res.status(200).json({
+        available: true, photo_usable: true, problems: [], photoId: null, model: "sample (simulated)",
+        bins: bins.map(b => canned[b.name] ? { id: b.id, level: canned[b.name][0], confidence: canned[b.name][1], visible: true } : { id: b.id, level: 0, confidence: "low", visible: false })
+      });
+    }
     if (!visionAvailable()) return res.status(200).json({ available: false, reason: "no_key" });
 
     let est;
