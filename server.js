@@ -107,6 +107,22 @@ export function createServer() {
   });
 }
 
+// The Photon texting agent runs inside this same process when its PHOTON_* values are in .env
+// (PHOTON_AGENT=0 turns it off). A failure here is logged and never stops the website.
+async function startPhoton() {
+  const need = ["PHOTON_PROJECT_ID", "PHOTON_API_KEY", "PHOTON_AGENT_HANDLE", "PHOTON_TEST_SENDER"];
+  if (process.env.PHOTON_AGENT === "0") return console.log("Photon agent: off (PHOTON_AGENT=0)");
+  const missing = need.filter(k => !process.env[k]);
+  if (missing.length) return console.log(`Photon agent: off (add ${missing.join(", ")} to .env to turn it on)`);
+  try {
+    const { startAgent } = await import("./photon-agent.js");
+    startAgent();
+    console.log(`Photon agent: on (answers prep, events and help for ${process.env.PHOTON_TEST_SENDER.split(",").length} allowed sender(s))`);
+  } catch (err) {
+    console.error("Photon agent failed to start (the website is fine):", err.message);
+  }
+}
+
 // Start only when run directly (tests import createServer instead)
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   createServer().listen(PORT, () => {
@@ -117,5 +133,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const dbUrl = process.env.TURSO_DATABASE_URL || "";
     const pairing = process.env.REQUIRE_PAIRING === "1" || process.env.VERCEL;
     console.log(`Data: ${dbUrl && !dbUrl.startsWith("file:") ? "Turso" : "local file"} · device PIN: ${pairing ? "required" : "off (local)"}`);
+    startPhoton();
   });
 }
