@@ -7,6 +7,8 @@ import { deviceFromCookie } from "./api/_lib/token.js";
 export const next = () => new Response(null, { headers: { "x-middleware-next": "1" } });
 
 export default async function middleware(request) {
+  // Pairing is off for local runs (same rule as pairingOn in api/_lib/auth.js; not imported to keep this file light)
+  if (process.env.REQUIRE_PAIRING !== "1" && !process.env.VERCEL) return next();
   const url = new URL(request.url);
   try {
     const device = await deviceFromCookie(request.headers.get("cookie"));

@@ -1,15 +1,10 @@
-import { DEFAULTS, SETTING_FIELDS, HOURS, TYPES, WHEN, DEFAULT_SOURCES, FIXED_EVENTS, LEGACY_LABELS, LOCATION } from "./config.js";
+import { DEFAULTS, SETTING_FIELDS, HOURS, TYPES, WHEN, DEFAULT_SOURCES, withFixed, LEGACY_LABELS, LOCATION } from "./config.js";
 import { DOW, MON, iso, dayEvents, isBreak, tempFactor, forecast, hourly, bobaPlan, fruitPlan, machines } from "./model.js";
 import { getWeather } from "./weather.js";
 import * as store from "./store.js";
 
 // ---------------- State ----------------
-// FIXED_EVENTS are always present (first in the list) and can't be deleted; any saved copy of one is dropped
-function withFixed(list) {
-  return [...FIXED_EVENTS.map(e => ({ ...e, fixed: true })),
-    ...list.filter(e => !e.fixed && !FIXED_EVENTS.some(f => f.id === e.id || (f.from === e.from && f.label.toLowerCase() === e.label.toLowerCase())))];
-}
-
+// FIXED_EVENTS are always present (first in the list) and can't be deleted: see withFixed in config.js
 const saved = store.load();
 const st = {
   s: { ...structuredClone(DEFAULTS), ...(saved.s || {}), base: { ...DEFAULTS.base, ...(saved.s?.base || {}) } },

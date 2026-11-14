@@ -72,6 +72,15 @@ export const FIXED_EVENTS = [
     source: "HackPrinceton", url: "https://www.hackprinceton.com/" }
 ];
 
+// Put the fixed events first and drop any saved copy of them (older versions saved HackPrinceton as a normal event)
+export const withFixed = list => [
+  ...FIXED_EVENTS.map(e => ({ ...e, fixed: true })),
+  ...list.filter(e => !e.fixed && !FIXED_EVENTS.some(f => f.id === e.id || (f.from === e.from && f.label.toLowerCase() === e.label.toLowerCase())))
+];
+
+// What a screen uses before any events are saved or synced
+export const DEFAULT_EVENTS = withFixed([]);
+
 // Old hardcoded starter events: dropped from browsers that saved them
 export const LEGACY_LABELS = ["HackPrinceton", "A cappella concert (sample)", "Home football game (sample)",
   "Holiday market downtown (sample)", "Thanksgiving recess", "Thanksgiving recess (verify with Registrar)"];

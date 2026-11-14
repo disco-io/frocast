@@ -3,7 +3,7 @@
 // Demo: clock.html?demo=1&day=2026-11-14&min=600 (or postMessage {type:"frocast-time", min, day}).
 import { applyStatic, langToggle, t } from "./i18n.js";
 import { call } from "./api.js";
-import { DEFAULTS, DEFAULT_EVENTS, LOCATION } from "./config.js";
+import { DEFAULTS, DEFAULT_EVENTS, withFixed, LOCATION } from "./config.js";
 import { forecast, bobaDemand, iso } from "./model.js";
 import { getWeather } from "./weather.js";
 import { clockState, OPEN, CLOSE } from "./planner.js";
@@ -39,7 +39,7 @@ async function loadShared() {
     try { src = JSON.parse(localStorage.getItem("frocast-v1") || "{}"); } catch { src = {}; }
   }
   S.s = { ...structuredClone(DEFAULTS), ...(src.s || {}), base: { ...DEFAULTS.base, ...(src.s?.base || {}) } };
-  S.events = src.events || DEFAULT_EVENTS;
+  S.events = withFixed(src.events || []);   // the dashboard never saves fixed events (e.g. HackPrinceton), so add them back
   if (r.status === 401) toPair();
 }
 

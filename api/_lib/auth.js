@@ -19,8 +19,13 @@ export function clientIp(req) {
   return String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
 }
 
-// A paired, non-revoked device for this location, or null.
+// Pairing (the PIN screen) is off for local runs so the app opens straight away.
+// It turns on when deployed on Vercel, or locally with REQUIRE_PAIRING=1. (middleware.js repeats this one-liner.)
+export const pairingOn = () => process.env.REQUIRE_PAIRING === "1" || !!process.env.VERCEL;
+
+// A paired, non-revoked device for this location, or null. With pairing off, every browser counts as paired.
 export async function requireDevice(req) {
+  if (!pairingOn()) return { id: "local", name: "This device" };
   const tok = await deviceFromCookie(req.headers.cookie);
   if (!tok || tok.location !== LOCATION) return null;
   const db = await ready();

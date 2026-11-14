@@ -8,6 +8,7 @@ import { rmSync } from "node:fs";
 const dbFile = path.join(tmpdir(), `frocast-boba-${process.pid}-${Date.now()}.db`);
 process.env.TURSO_DATABASE_URL = `file:${dbFile}`;
 process.env.OWNER_PIN = "2468";
+process.env.REQUIRE_PAIRING = "1";   // these tests cover the PIN screen, which is off by default locally
 process.env.DEVICE_SECRET = "test-secret";
 delete process.env.VERCEL;
 

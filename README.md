@@ -24,10 +24,10 @@ No build step, just Node 20+ and one dependency (Turso's database client):
 npm install
 cp .env.example .env     # then put your ANTHROPIC_API_KEY in .env (never commit it)
 npm start
-# open http://localhost:8000 and set up the device with the owner PIN (0000 unless OWNER_PIN is set)
-npm test                 # pairing, page gate and shared-data tests
+# open http://localhost:8000 (no PIN screen when running locally)
+npm test                 # pairing, page gate, no-PIN local mode and shared-data tests
 ```
-`server.js` serves the site, runs the `api/` functions and the device-pairing check, and keeps data in a local `local.db` file unless `TURSO_*` is set. Without an AI key, everything except the AI event import still works.
+`server.js` serves the site, runs the `api/` functions (and the device-pairing check when it is turned on), and keeps data in a local `local.db` file unless `TURSO_*` is set. Without an AI key, everything except the AI event import still works.
 
 ## Deploy
 Import the repo in Vercel (no framework, no build command). Add these under Project → Settings → Environment Variables:
@@ -37,7 +37,7 @@ Import the repo in Vercel (no framework, no build command). Add these under Proj
 - `DEVICE_SECRET`: a long random string that signs device cookies. Changing it un-pairs every device.
 
 ## Devices and shared data
-Staff pages open only on a **paired device**. The owner enters the PIN once on each tablet or phone, and it stays set up for a year. Settings, events and closing logs are saved to Turso, so every paired device sees the same numbers. A copy stays in the browser, so a device that loses connection keeps working.
+When deployed (on Vercel, or locally with `REQUIRE_PAIRING=1`), staff pages open only on a **paired device**: the owner enters the PIN once on each tablet or phone, and it stays set up for a year. Locally there is no PIN screen, so the app opens straight away. Settings, events and closing logs are saved to Turso, so every paired device sees the same numbers. A copy stays in the browser, so a device that loses connection keeps working.
 
 ## Honest notes
 - Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings.
