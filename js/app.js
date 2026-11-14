@@ -338,9 +338,16 @@ async function start() {
   initEventForms();
   initLog();
   initSettings();
-  const { days, live } = await getWeather(today(), LOCATION);
+  const [{ days, live }, remote] = await Promise.all([getWeather(today(), LOCATION), store.pull()]);
   st.days = days;
   st.live = live;
+  if (remote) {
+    // Shared data (Turso) wins over this browser's copy, so all paired devices match.
+    if (remote.s) st.s = { ...structuredClone(DEFAULTS), ...remote.s, base: { ...DEFAULTS.base, ...(remote.s.base || {}) } };
+    if (remote.events) st.events = remote.events;
+    if (remote.logs) st.logs = remote.logs;
+    if (remote.showSample !== undefined) st.showSample = remote.showSample;
+  }
   $("wxBadge").textContent = live ? "Live weather · sample sales numbers" : "Sample weather · sample sales numbers";
   $("wxBadge").classList.toggle("badge-live", live);
   renderSettings();
