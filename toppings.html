@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FroCast · topping bar check</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍓</text></svg>">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/toppings.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">❄</div>
+      <div><h1 data-t="top.title">Topping bar check</h1><small><a href="/" data-t="clock.back">← Dashboard</a> · <span id="dayLabel"></span></small></div>
+    </div>
+    <button class="tp-chip" id="lang" type="button">Español</button>
+  </header>
+
+  <div class="card hidden" id="offCard"><p data-t="top.off">The topping bar check is turned off.</p></div>
+
+  <div id="app" class="hidden">
+    <nav id="tabs" class="tp-tabs">
+      <button type="button" data-tab="open" class="on" data-t="top.tabOpen">Open check</button>
+      <button type="button" data-tab="refills" data-t="top.tabRefills">Refills</button>
+      <button type="button" data-tab="close" data-t="top.tabClose">Close check</button>
+      <button type="button" data-tab="bins" data-t="top.tabBins">Bins</button>
+    </nav>
+
+    <section id="checkView" class="card">
+      <p class="tp-lead" id="checkLead"></p>
+      <div class="tp-status" id="checkStatus"></div>
+      <div class="tp-photo">
+        <label class="btn tp-big" for="photoInput"><span data-t="top.takePhoto">📷 Take photo</span></label>
+        <input id="photoInput" type="file" accept="image/*" capture="environment" class="tp-file">
+        <button class="btn ghost tp-big" type="button" id="byHand" data-t="top.byHand">Enter by hand</button>
+        <img id="photoPreview" class="tp-preview hidden" alt="">
+      </div>
+      <div class="tp-banner hidden" id="banner" role="status" aria-live="polite"></div>
+      <div id="grid" class="tp-grid"></div>
+      <div class="tp-confirm">
+        <button class="btn tp-big" type="button" id="confirmAll" data-t="top.confirmAll">Confirm all</button>
+        <span class="tp-msg" id="confirmMsg" role="status" aria-live="polite"></span>
+      </div>
+      <div id="negatives"></div>
+      <div id="usageBox" class="tp-usage"></div>
+    </section>
+
+    <section id="refillsView" class="card hidden">
+      <div id="refillGrid" class="tp-grid"></div>
+      <h2 data-t="top.refillsToday">Refills today</h2>
+      <div id="refillList"></div>
+    </section>
+
+    <section id="binsView" class="card hidden">
+      <p class="tp-lead" data-t="top.binsLead"></p>
+      <form id="ownerForm" class="log hidden">
+        <label><span data-t="top.ownerPin">Owner PIN</span><input type="password" id="ownerPin" inputmode="numeric" autocomplete="off"></label>
+        <button class="btn" type="submit" data-t="top.unlock">Unlock bin setup</button>
+        <span class="tp-msg" id="ownerMsg"></span>
+      </form>
+      <div id="binList"></div>
+      <button class="btn ghost hidden" type="button" id="addBin" data-t="top.addBin">Add bin</button>
+    </section>
+  </div>
+</div>
+
+<div class="tp-sheet hidden" id="whySheet" role="dialog" aria-modal="true" aria-labelledby="whyTitle">
+  <div class="card tp-sheetcard">
+    <h2 id="whyTitle" data-t="top.whyTitle">Why this number?</h2>
+    <div class="why" id="whyRows"></div>
+    <div class="formula" id="whyFormula"></div>
+    <button class="btn ghost" type="button" id="whyClose" data-t="why.close">Close</button>
+  </div>
+</div>
+
+<script type="module" src="js/toppings.js"></script>
+</body>
+</html>

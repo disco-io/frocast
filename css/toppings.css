@@ -1,0 +1,44 @@
+/* Topping bar check: phone-first, big touch targets. Uses the dashboard's colors. */
+.tp-chip { font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 9px 14px; border-radius: 10px; cursor: pointer; min-height: 44px; }
+.tp-tabs button { min-height: 44px; }
+.tp-lead { margin: 0 0 12px; font-size: 15px; }
+.tp-status { font-size: 14px; color: var(--mint); font-weight: 600; min-height: 4px; margin-bottom: 10px; }
+.tp-photo { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+.tp-big { font-size: 16px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; }
+.btn.ghost { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.tp-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.tp-preview { width: 100%; max-width: 420px; border-radius: 12px; border: 1px solid var(--line); }
+.tp-banner { border-radius: 12px; padding: 12px 14px; font-size: 15px; font-weight: 600; margin-bottom: 12px; background: var(--amberSoft); color: #6b4505; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.tp-banner.ok { background: var(--mintSoft); color: #1d6b55; }
+.tp-banner.bad { background: #fde8e6; color: #8f241d; }
+.tp-row { margin: 14px 0 6px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.tp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.tp-bin { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: var(--card); }
+.tp-bin.look { border: 2px solid var(--amber); background: var(--amberSoft); }
+.tp-bin h3 { margin: 0 0 4px; font-size: 16px; display: flex; justify-content: space-between; gap: 8px; }
+.tp-hint { font-size: 12px; font-weight: 700; color: var(--muted); }
+.tp-bin.look .tp-hint { color: #8a5a07; }
+.tp-levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+.tp-levels button { font: inherit; font-size: 15px; font-weight: 700; min-height: 48px; border-radius: 10px; border: 1px solid var(--line); background: #faf8f5; color: var(--ink); cursor: pointer; padding: 0 2px; }
+.tp-levels button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.tp-confirm { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 16px; }
+.tp-msg { font-size: 14px; font-weight: 600; }
+.tp-neg { border: 2px solid var(--red); border-radius: 14px; padding: 12px; margin-top: 12px; background: #fde8e6; }
+.tp-neg p { margin: 0 0 10px; font-weight: 700; }
+.tp-neg .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.tp-usage { margin-top: 18px; display: grid; gap: 6px; }
+.tp-usage button { font: inherit; text-align: left; display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 0; background: #faf8f5; cursor: pointer; color: var(--ink); min-height: 44px; }
+.tp-usage button b { font-variant-numeric: tabular-nums; }
+.tp-refill .btns { display: flex; gap: 8px; margin-top: 8px; }
+.tp-refill .btns button { flex: 1; min-height: 56px; font-size: 16px; }
+.tp-refill .btns .half { flex: 0 0 auto; }
+.tp-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; font-size: 14px; }
+.tp-list li { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 10px; background: #faf8f5; border-radius: 10px; }
+.tp-binrow { display: grid; grid-template-columns: 2fr repeat(2, 70px) 1.3fr 1.2fr 1fr auto auto; gap: 8px; align-items: end; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.tp-binrow label { font-size: 12px; font-weight: 600; display: grid; gap: 4px; }
+.tp-binrow input, .tp-binrow select { min-height: 44px; }
+.tp-assumed { font-size: 11px; font-weight: 700; background: var(--amberSoft); color: #8a5a07; border-radius: 99px; padding: 1px 8px; justify-self: start; }
+@media (max-width: 860px) { .tp-binrow { grid-template-columns: 1fr 1fr; } }
+.tp-sheet { position: fixed; inset: 0; background: rgba(15,18,26,.5); display: flex; align-items: flex-end; justify-content: center; z-index: 10; padding: 12px; }
+.tp-sheetcard { width: min(620px, 100%); max-height: 85vh; overflow: auto; }
+.hidden { display: none !important; }

@@ -35,9 +35,17 @@ Import the repo in Vercel (no framework, no build command). Add these under Proj
 - `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`: the shared database (create a free database at turso.tech)
 - `OWNER_PIN`: the PIN the owner types once per device
 - `DEVICE_SECRET`: a long random string that signs device cookies. Changing it un-pairs every device.
+- `TOPPING_CAMERA`: `1` turns on the topping bar check. Leave it unset to hide it.
+- `CRON_SECRET`: protects the daily photo cleanup.
 
 ## Devices and shared data
 When deployed (on Vercel, or locally with `REQUIRE_PAIRING=1`), staff pages open only on a **paired device**: the owner enters the PIN once on each tablet or phone, and it stays set up for a year. Locally there is no PIN screen, so the app opens straight away. Settings, events and closing logs are saved to Turso, so every paired device sees the same numbers. A copy stays in the browser, so a device that loses connection keeps working.
+
+## Boba clock (`clock.html`)
+A counter-tablet screen whose color is the state: green (fresh), amber (cook soon), red (cook now). It says when to start the next batch and how big ("Cook a HALF batch at 1:15") from the forecast, batch size, cook time and freshness in Settings. Staff tap **Batch cooked** and **Running low**. When a batch passes its freshness window, one tap answers "How much was left?", and that answer goes into the waste log. **Why this?** shows the math.
+
+## Topping bar check (`toppings.html`, behind `TOPPING_CAMERA`)
+At open and close, staff photograph the topping bar on a phone, or enter each bin's level by hand. The AI pre-fills each bin (empty, ¼, ½, ¾, full). Anything unclear is left blank and marked "needs a look", and nothing is saved until staff tap **Confirm all**. The day's usage per bin is open + refills − close. A negative result asks whether a refill was missed. Close levels of bins marked "thrown out" go to the waste log in pans. Photos are stored only when the check passed and no person is in frame, are visible only on paired devices, and are deleted after the Settings retention period (14 days by default). The owner sets up bins under **Bins**.
 
 ## Honest notes
 - Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings.
