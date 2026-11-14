@@ -318,18 +318,6 @@ async function syncAll() {
   }
 }
 
-function initSources() {
-  $("srcForm").addEventListener("submit", e => {
-    e.preventDefault();
-    const url = $("sUrl").value.trim();
-    if (!/^https?:\/\//.test(url)) { say($("syncMsg"), "The link must start with http:// or https://", "red"); return; }
-    st.sources.push({ id: "s" + Date.now().toString(36), name: $("sName").value.trim() || new URL(url).hostname, url, hint: $("sHint").value });
-    $("sName").value = $("sUrl").value = "";
-    changed();
-    syncAll();
-  });
-}
-
 function initEventForms() {
   $("eType").innerHTML = Object.entries(TYPES).map(([k, t]) => `<option value="${k}">${t.icon} ${t.name}</option>`).join("");
   $("eWhen").innerHTML = Object.entries(WHEN).map(([k, w]) => `<option value="${k}">${w.name}</option>`).join("");
@@ -527,7 +515,6 @@ function initTabs() {
 async function start() {
   initTabs();
   initEventForms();
-  initSources();
   initLog();
   initSettings();
   const [{ days, live }, remote, shape] = await Promise.all([getWeather(today(), LOCATION), store.pull(), loadShape()]);

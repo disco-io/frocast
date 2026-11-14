@@ -82,7 +82,7 @@ export const WHEN = {
 };
 
 // No hardcoded events: they are read from these sources by "Sync" (feeds are parsed, web pages are read by AI).
-// hint "athletics" keeps home games only. Add or remove sources on the Events tab.
+// hint "athletics" keeps home games only. Add sources here; a source can be removed on the Events tab.
 export const DEFAULT_SOURCES = [
   { id: "athletics", name: "Princeton Athletics", url: "https://goprincetontigers.com/calendar.ashx/calendar.ics", hint: "athletics" },
   { id: "palmer", name: "Palmer Square events", url: "https://palmersquare.com/events/?ical=1", hint: "town" },
