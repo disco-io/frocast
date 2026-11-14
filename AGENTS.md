@@ -37,8 +37,8 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 4. If a conflict is big or confusing, **stop and tell your human** rather than guessing.
 
 ## Before you push
-- `node --check js/*.js api/*.js` passes (syntax check).
-- Run the site locally (`python3 -m http.server 8000` or `npx vercel dev`), click through every tab,
+- `npm run check` passes (syntax check).
+- Run the site locally (`npm start`, then http://localhost:8000), click through every tab,
   and check the browser console has no errors.
 - `git status` shows only the files you meant to change.
 
@@ -56,7 +56,9 @@ js/model.js         forecast, hourly curve, boba / fruit / machine plans
 js/weather.js       live forecast (Open-Meteo), sample fallback
 js/store.js         saves data in the browser (localStorage)
 js/app.js           rendering and UI events
-api/events.js       Vercel function: AI pulls events out of pasted calendar text
+api/events.js       Vercel-style function: AI pulls events out of pasted calendar text
+server.js           local dev server: serves the site and runs api/ (npm start)
+.env.example        template for .env (the real .env is never committed)
 ```
 
 ## Code style
@@ -68,4 +70,4 @@ api/events.js       Vercel function: AI pulls events out of pasted calendar text
 - Anything that isn't real must be labeled: mark placeholder events "(sample)" and keep the "sample" badges.
 - Never present estimated savings as exact numbers.
 - Food-safety limits (how long boba and fruit stay good) come from the shop, never from us.
-- Never commit API keys. The AI key lives in Vercel's environment variables as `ANTHROPIC_API_KEY`.
+- Never commit API keys. The AI key lives in your local `.env` (and later in Vercel's environment variables) as `ANTHROPIC_API_KEY`.

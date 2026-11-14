@@ -35,7 +35,7 @@ function renderDays() {
     return `<div class="day ${i === st.sel ? "on" : ""}" data-i="${i}">
       <div class="d">${i === 0 ? "Today" : DOW[d.date.getDay()]} ${d.date.getDate()}</div>
       <div class="t">${d.temp}°F</div>
-      <div class="c">${f} cust.</div>
+      <div class="c" title="Expected customers">👥 ${f}</div>
       <div class="flag">${icons || "&nbsp;"}</div></div>`;
   }).join("");
   document.querySelectorAll(".day").forEach(el => el.addEventListener("click", () => {
@@ -195,7 +195,7 @@ function initEventForms() {
       say(msg, found.length ? `Added ${found.length} event${found.length > 1 ? "s" : ""}. Check them in the table above.` : "No events found in that text.", "mint");
     } catch (err) {
       say(msg, err.message === "no-api"
-        ? "AI import needs the API: run with `npx vercel dev` (or deploy) and set ANTHROPIC_API_KEY."
+        ? "AI import needs the local server: stop the current one and run `npm start`, with ANTHROPIC_API_KEY in .env."
         : "Couldn't read that text. Try a shorter piece, or add events by hand.", "red");
     } finally {
       $("aiBtn").disabled = false;

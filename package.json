@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "check": "node --check js/app.js && node --check js/model.js && node --check js/config.js && node --check js/weather.js && node --check js/store.js && node --check api/events.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "check": "node --check server.js && node --check js/app.js && node --check js/model.js && node --check js/config.js && node --check js/weather.js && node --check js/store.js && node --check api/events.js"
   }
 }

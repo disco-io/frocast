@@ -19,19 +19,16 @@ Cut fruit toppings spoil too.
 - **Closing log**: staff enter customers and what got thrown out (30 seconds). The forecast adjusts and the waste chart tracks progress.
 
 ## Run it locally
-Static site, no build step:
+No build step and no dependencies, just Node 20+:
 ```bash
-python3 -m http.server 8000
+cp .env.example .env     # then put your ANTHROPIC_API_KEY in .env (never commit it)
+npm start
 # open http://localhost:8000
 ```
-The AI event import needs the serverless function. Run with Vercel instead:
-```bash
-npx vercel dev
-# set ANTHROPIC_API_KEY in a local .env file (never commit it)
-```
+`server.js` serves the site and runs the `api/` functions, so the AI event import works locally. Without a key, everything else still works.
 
-## Deploy
-Import the repo in Vercel (no framework, no build command). Add `ANTHROPIC_API_KEY` under Project → Settings → Environment Variables.
+## Deploy (later)
+Import the repo in Vercel (no framework, no build command). Add `ANTHROPIC_API_KEY` under Project → Settings → Environment Variables. `api/events.js` runs there as is.
 
 ## Honest notes
 - Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings.
