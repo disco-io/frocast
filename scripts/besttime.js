@@ -121,6 +121,8 @@ async function forecast(params, action) {
       "BESTTIME_PRIVATE_API_KEY is not set. Put it in .env (never commit it). The site keeps using the baseline curve.",
     );
   }
+  // BestTime echoes the private key back in its reply (top-level `api_key_private`).
+  // Replace it before anything is parsed, printed or saved, so the cache never holds the key.
   const redact = (s) => String(s).split(key).join("[key]");
   const url = `${URL_NEW}?${new URLSearchParams({ api_key_private: key, ...params })}`;
 
