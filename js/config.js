@@ -47,7 +47,7 @@ export const DEFAULT_EVENTS = [
   { from: "2026-11-20", to: "2026-11-20", label: "A cappella concert (sample)", type: "student", when: "evening", source: "Student events" },
   { from: "2026-11-21", to: "2026-11-21", label: "Home football game (sample)", type: "athletics", when: "afternoon", source: "Athletics" },
   { from: "2026-11-22", to: "2026-11-22", label: "Holiday market downtown (sample)", type: "town", when: "afternoon", source: "Town events" },
-  { from: "2026-11-25", to: "2026-11-29", label: "Thanksgiving recess (verify with Registrar)", type: "break", when: "all", source: "Registrar" }
+  { from: "2026-11-25", to: "2026-11-29", label: "Thanksgiving recess", type: "break", when: "all", source: "Registrar" }
 ];
 
 // Shop location (Nassau St, Princeton) for the weather forecast
