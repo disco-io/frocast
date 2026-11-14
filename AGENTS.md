@@ -46,7 +46,7 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 | Person / agent | Task | Files | Started |
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
-| Dzau (Claude) | BestTime hourly shape | new: `js/shape.js`, `api/shape.js`, `scripts/besttime.js`, `tests/shape.test.mjs`, `tests/besttime.test.mjs`; small edits in `js/model.js` (forecast weather row, hourly), `js/weather.js`, `js/config.js` (base), `js/app.js`, `index.html`, `css/styles.css` | Sat 14:45 |
+| Dzau (Claude) | BestTime hourly shape | new: `js/shape.js`, `api/shape.js`, `scripts/besttime.js`, `tests/shape.test.mjs`, `tests/besttime.test.mjs`; small edits in `js/model.js` (forecast weather row, hourly), `js/weather.js`, `js/config.js` (base, `settings()`), `js/app.js`, `js/clock.js` + `clock.html` + `js/strings.js` (shape, norm, Why line), `index.html`, `css/styles.css` | Sat 14:45 |
 
 ## Project layout
 ```
