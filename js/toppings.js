@@ -1,14 +1,17 @@
 // Topping bar check: open and close checks (photo prefill or by hand), refills during the
 // day, usage per bin, and the "Why?" view. Behind the TOPPING_CAMERA feature flag.
 // Demo: toppings.html?demo=1&day=2026-11-14&min=1380
+// Table demo with two real bowls of fruit: toppings.html?demo=bowls
 import { applyStatic, langToggle, t } from "./i18n.js";
 import { call } from "./api.js";
 import { LEVELS, prefill, usage, discards } from "./toppings-math.js";
 import { DEMO_PHOTOS } from "./demo-data.js";
+import { GW, gridH, grid, match, verdict } from "./align.js";
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const demo = params.get("demo") === "1";
+const bowls = params.get("demo") === "bowls"; // two real bowls on a table: real photos, no simulated data
 const S = {
   tab: "open", data: null, owner: false, enabled: false,
   draft: { open: {}, close: {} }, est: { open: null, close: null }, dismissed: new Set(), negatives: [], newBins: 0
@@ -17,16 +20,18 @@ const S = {
 // ---------- helpers ----------
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const D = { day: demo ? params.get("day") : null, min: demo && params.has("min") ? Number(params.get("min")) : null };
-const ctx = () => ({ scenario: demo ? "demo" : "live", ...(D.day ? { day: D.day } : {}), ...(D.min !== null ? { min: D.min } : {}) });
+const ctx = () => ({ scenario: demo ? "demo" : bowls ? "bowls" : "live", ...(D.day ? { day: D.day } : {}), ...(D.min !== null ? { min: D.min } : {}) });
 const qs = () => new URLSearchParams(ctx()).toString();
 const lvl = v => t(`top.lvl.${v}`);
+// Wording for the table demo where it differs ("top.x.bowls"), else the usual string.
+const tk = (key, vars) => (bowls && t(`${key}.bowls`) !== `${key}.bowls` ? t(`${key}.bowls`, vars) : t(key, vars));
 const FR = { 0.25: "¼", 0.5: "½", 0.75: "¾" };
 function pans(n) {
   if (n == null) return "–";
   const sign = n < 0 ? "−" : "", a = Math.abs(Math.round(n * 4) / 4), whole = Math.floor(a), frac = a - whole;
   return `${sign}${whole || !frac ? whole : ""}${FR[frac] || ""}`;
 }
-const pansText = n => (Math.abs(n) === 1 ? t("top.pan", { n: pans(n) }) : t("top.pans", { n: pans(n) }));
+const pansText = n => t(`top.${bowls ? "bowl" : "pan"}${Math.abs(n) === 1 ? "" : "s"}`, { n: pans(n) });
 const timeOf = iso => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const minText = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 const bins = () => S.data?.bins || [];
@@ -43,6 +48,17 @@ function banner(kind, html) {
   b.classList.toggle("hidden", !html);
   b.querySelector("[data-retake]")?.addEventListener("click", () => $("photoInput").click());
   b.querySelector("[data-hand]")?.addEventListener("click", enterByHand);
+  b.querySelector("[data-anyway]")?.addEventListener("click", () => S.pending && check(S.pending.kind, S.pending.dataUrl));
+}
+
+// The photo just taken, with the earlier photo beside it on the close check.
+function preview(src) {
+  const before = src && S.tab === "close" ? overlaySrc() : null;
+  $("photoPair").classList.toggle("hidden", !src);
+  $("beforeFig").classList.toggle("hidden", !before);
+  if (src) $("photoPreview").src = src;
+  if (before) $("photoBefore").src = before;
+  $("previewCap").textContent = before ? t("top.now") : "";
 }
 
 // ---------- data ----------
@@ -55,6 +71,11 @@ async function load() {
   ]);
   if (r.status === 401) { location.href = `/pair.html?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
   if (!r.ok) return;
+  if (bowls && !r.data.bins.length && !S.seeded) {
+    S.seeded = true;
+    await call("/api/demo", { method: "POST", body: { action: "reset", scenario: "bowls" } });
+    return load();
+  }
   S.data = r.data;
   S.extra = { guidance: guide.ok ? guide.data : null, totals: tot.ok ? tot.data : null, suggestions: sugg.ok ? sugg.data.suggestions : [] };
   S.owner = !!r.data.owner;
@@ -93,8 +114,20 @@ async function onPhoto(file) {
   } catch {
     return banner("bad", `${esc(t("top.unavailable"))} <button class="btn ghost" type="button" data-retake>${esc(t("top.retake"))}</button>`);
   }
-  $("photoPreview").src = dataUrl;
-  $("photoPreview").classList.remove("hidden");
+  // Taken with the plain camera app (no live guide): still has to roughly match the earlier photo.
+  const v = kind === "close" ? await lineUp(dataUrl) : null;
+  if (v && !v.ok) {
+    S.pending = { kind, dataUrl };
+    preview(dataUrl);
+    return banner("bad", `${esc(t("top.notAligned", { hint: t(`top.al.${v.hint}`) }))} <button class="btn ghost" type="button" data-retake>${esc(t("top.retake"))}</button> <button class="btn ghost" type="button" data-anyway>${esc(t("top.useAnyway"))}</button>`);
+  }
+  check(kind, dataUrl);
+}
+
+async function check(kind, dataUrl) {
+  S.pending = null;
+  banner("", esc(t("top.checking")));
+  preview(dataUrl);
   showResult(kind, await askVision({ kind, image: dataUrl }));
 }
 
@@ -103,8 +136,7 @@ async function onSample() {
   const kind = S.tab;
   if (!["open", "close"].includes(kind)) return;
   banner("", esc(t("top.checking")));
-  $("photoPreview").src = DEMO_PHOTOS[kind];
-  $("photoPreview").classList.remove("hidden");
+  preview(DEMO_PHOTOS[kind]);
   showResult(kind, await askVision({ kind, sample: true }));
 }
 
@@ -132,7 +164,7 @@ function showResult(kind, res) {
   }
   if (res.problems.includes("person_in_frame")) {
     S.est[kind] = null;
-    $("photoPreview").classList.add("hidden");
+    preview(null);
     return banner("bad", `${esc(t("top.person"))} ${retake} ${hand}`);
   }
   if (!res.photo_usable) {
@@ -142,20 +174,39 @@ function showResult(kind, res) {
   }
   S.est[kind] = { ...res, byId: Object.fromEntries(res.bins.map(b => [b.id, b])) };
   for (const b of bins()) S.draft[kind][b.id] = prefill(S.est[kind].byId[b.id]);
-  banner("ok", esc(t("top.prefilled")));
+  banner("ok", esc(t(res.compared ? "top.compared" : "top.prefilled")));
   render();
 }
 
-// ---------- step 3: live camera with this morning's photo as an overlay ----------
-const overlaySrc = () => {
+// ---------- step 3: live camera, locked until it lines up with the earlier photo ----------
+// The confirmed open photo is what the close photo has to line up with. (The demo's placeholder
+// picture is only shown as an overlay: nothing can line up with a drawing, so it never locks.)
+const refSrc = () => {
   const id = S.data?.checks.open?.photoId;
-  return id ? `/api/toppings?photo=${encodeURIComponent(id)}` : (demo ? DEMO_PHOTOS.open : null);
+  return id ? `/api/toppings?photo=${encodeURIComponent(id)}` : null;
 };
-let camStream = null;
+const overlaySrc = () => refSrc() || (demo ? DEMO_PHOTOS.open : null);
+const loadImg = src => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = bad; i.src = src; });
+const sideways = (a, b) => (a.naturalWidth > a.naturalHeight) !== ((b.videoWidth || b.naturalWidth) > (b.videoHeight || b.naturalHeight));
+
+// A finished photo against the earlier one. null = nothing to compare with.
+async function lineUp(dataUrl) {
+  if (!refSrc()) return null;
+  try {
+    const [ref, shot] = await Promise.all([loadImg(refSrc()), loadImg(dataUrl)]);
+    const h = gridH(shot.naturalWidth, shot.naturalHeight), turned = sideways(ref, shot);
+    return verdict(turned ? null : match(grid(ref, GW, h), grid(shot, GW, h), GW, h), GW, h, { turned, loose: true });
+  } catch {
+    return null;
+  }
+}
+
+let camStream = null, alignTimer = null;
+const A = { lock: false, ref: null, h: 0, good: 0, bad: 0, ready: false, since: 0, hint: "" };
+const ANYWAY_AFTER = 12000; // ms of trying before the "take it anyway" way out appears
 
 async function takePhoto() {
-  const live = S.tab === "close" && !S.noLiveCam && overlaySrc() && window.isSecureContext && navigator.mediaDevices?.getUserMedia;
-  if (!live) return $("photoInput").click();
+  if (S.noLiveCam || !window.isSecureContext || !navigator.mediaDevices?.getUserMedia) return $("photoInput").click();
   try {
     camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 } }, audio: false });
   } catch {
@@ -163,14 +214,59 @@ async function takePhoto() {
     S.noLiveCam = true;
     return banner("", esc(t("top.camNoLive")));
   }
+  const over = S.tab === "close" ? overlaySrc() : null;
+  Object.assign(A, { lock: S.tab === "close" && !!refSrc(), ref: null, good: 0, bad: 0, ready: false, since: Date.now(), hint: "" });
   $("camVideo").srcObject = camStream;
-  $("camOverlay").src = overlaySrc();
-  $("camOverlay").classList.toggle("hidden", !$("camOverlayOn").checked);
+  $("camTitle").textContent = over ? tk("top.camTitle") : t("top.camTitleOpen");
+  $("camOverlayText").textContent = tk("top.camOverlay");
+  if (over) $("camOverlay").src = over; else $("camOverlay").removeAttribute("src");
+  $("camOverlay").classList.toggle("hidden", !over || !$("camOverlayOn").checked);
+  $("camOverlayOpt").classList.toggle("hidden", !over);
+  $("camHint").classList.toggle("hidden", !A.lock);
+  $("camMeter").classList.toggle("hidden", !A.lock);
+  $("camAnyway").classList.add("hidden");
+  $("camShot").disabled = A.lock;
+  camState("wait", 0);
+  clearInterval(alignTimer);
+  if (A.lock) alignTimer = setInterval(alignTick, 220);
   $("camSheet").classList.remove("hidden");
-  $("camShot").focus();
+  (A.lock ? $("camCancel") : $("camShot")).focus();
+}
+
+// The view takes the camera's shape, so what you line up is exactly what gets saved.
+function camShape() {
+  const v = $("camVideo");
+  if (v.videoWidth) $("camView").style.setProperty("--ar", (v.videoWidth / v.videoHeight).toFixed(4));
+}
+
+function camState(hint, pct) {
+  $("camView").className = `tp-camview${A.lock ? (A.ready ? " ready" : " lock") : ""}`;
+  $("camMeter").classList.toggle("ready", A.ready);
+  $("camMeter").firstElementChild.style.width = `${A.ready ? 100 : pct}%`;
+  if (hint !== A.hint) { A.hint = hint; $("camHint").textContent = t(`top.al.${hint}`); } // only on change, for screen readers
+}
+
+// A few times a second: compare the live view with the earlier photo and say which way to move.
+function alignTick() {
+  const v = $("camVideo"), img = $("camOverlay");
+  if (!v.videoWidth || !img.complete || !img.naturalWidth) return;
+  const h = gridH(v.videoWidth, v.videoHeight);
+  if (!A.ref || A.h !== h) { A.ref = grid(img, GW, h); A.h = h; }
+  const live = grid(v, GW, h), turned = sideways(img, v);
+  if (!A.ref || !live) return;
+  const res = verdict(turned ? null : match(A.ref, live, GW, h), GW, h, { turned });
+  A.good = res.ok ? A.good + 1 : 0;
+  A.bad = res.ok ? 0 : A.bad + 1;
+  if (A.good >= 2) A.ready = true;   // two good looks in a row unlock the shutter
+  if (A.bad >= 2) A.ready = false;   // two bad ones lock it again
+  $("camShot").disabled = !A.ready;
+  camState(A.ready ? "ok" : res.ok ? "hold" : res.hint, res.pct);
+  if (!A.ready && Date.now() - A.since > ANYWAY_AFTER) $("camAnyway").classList.remove("hidden");
 }
 
 function stopCamera() {
+  clearInterval(alignTimer);
+  alignTimer = null;
   camStream?.getTracks().forEach(tr => tr.stop());
   camStream = null;
   $("camVideo").srcObject = null;
@@ -187,11 +283,7 @@ async function shootCamera() {
   c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
   const dataUrl = c.toDataURL("image/jpeg", 0.82);
   stopCamera();
-  const kind = S.tab;
-  banner("", esc(t("top.checking")));
-  $("photoPreview").src = dataUrl;
-  $("photoPreview").classList.remove("hidden");
-  showResult(kind, await askVision({ kind, image: dataUrl }));
+  check(S.tab, dataUrl);
 }
 
 // ---------- step 4: guidance and totals ----------
@@ -200,7 +292,7 @@ const amt = n => ([0.25, 0.5, 0.75, 1].includes(n) ? t(`top.amt.${n}`) : t("top.
 function renderGuide(kind) {
   const g = S.extra?.guidance;
   const box = $("guideBox");
-  if (kind !== "open" || !g) { box.classList.add("hidden"); return; }
+  if (kind !== "open" || !g || bowls) { box.classList.add("hidden"); return; }
   const lines = g.bins.filter(b => b.usedYesterday != null && b.fresh);
   box.innerHTML = `<h3>${esc(t("top.guideTitle"))}</h3>` + (lines.length
     ? `<ul>${lines.map(b => `<li>${esc(t("top.guideLine", { bin: b.bin, setOut: amt(b.setOut), used: amt(b.usedYesterday) }))}</li>`).join("")}</ul>`
@@ -210,7 +302,7 @@ function renderGuide(kind) {
 
 function renderTotals(kind) {
   const tt = S.extra?.totals;
-  if (kind !== "close" || !tt) { $("totalsBox").textContent = ""; return; }
+  if (kind !== "close" || !tt || bowls) { $("totalsBox").textContent = ""; return; }
   const parts = [t("top.totals", { days: tt.days, pans: pansText(tt.pans) })];
   if (tt.dollars > 0) parts.push(t("top.totalsCost", { d: tt.dollars.toFixed(2) }));
   if (tt.pansNoCost > 0) parts.push(t("top.totalsNoCost", { pans: pansText(tt.pansNoCost) }));
@@ -222,7 +314,7 @@ function renderTotals(kind) {
 function enterByHand() {
   S.est[S.tab] = null;
   banner("", "");
-  $("photoPreview").classList.add("hidden");
+  preview(null);
   render();
   $("grid").querySelector("button")?.focus();
 }
@@ -233,7 +325,12 @@ function render() {
   $("checkView").classList.toggle("hidden", !["open", "close"].includes(S.tab));
   $("refillsView").classList.toggle("hidden", S.tab !== "refills");
   $("binsView").classList.toggle("hidden", S.tab !== "bins");
-  $("dayLabel").textContent = demo ? `${D.day || ""} · demo (simulated)` : new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+  document.querySelector("h1").textContent = tk("top.title");
+  document.querySelectorAll("#tabs button").forEach(b => {
+    b.textContent = tk(b.dataset.t);
+    b.classList.toggle("hidden", bowls && !["open", "close"].includes(b.dataset.tab));
+  });
+  $("dayLabel").textContent = bowls ? t("top.dayBowls") : demo ? `${D.day || ""} · demo (simulated)` : new Date().toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
   if (!S.data) return;
   if (S.tab === "open" || S.tab === "close") renderCheck(S.tab);
   if (S.tab === "refills") renderRefills();
@@ -248,7 +345,8 @@ function byRow(list) {
 
 function renderCheck(kind) {
   const check = S.data.checks[kind];
-  $("checkLead").textContent = t(kind === "open" ? "top.openLead" : "top.closeLead");
+  $("checkLead").textContent = tk(kind === "open" ? "top.openLead" : "top.closeLead") + (bowls && kind === "close" && !refSrc() ? ` ${t("top.needOpen")}` : "");
+  const was = kind === "close" ? S.data.checks.open?.levels || {} : {};
   $("checkStatus").textContent = check
     ? t("top.confirmed", { time: timeOf(check.confirmedAt), who: check.confirmedBy, how: check.estimator === "vision" ? t("top.howPhoto") : t("top.howHand") })
     : "";
@@ -257,13 +355,16 @@ function renderCheck(kind) {
     $("grid").innerHTML = `<p>${esc(t("top.noBins"))}</p>`;
   } else {
     $("grid").innerHTML = byRow(bins()).map(([row, list]) =>
-      `<div class="tp-row" style="grid-column:1/-1">${esc(row === 1 ? t("top.rowBack") : t("top.row", { n: row }))}</div>` +
+      (bowls ? "" : `<div class="tp-row" style="grid-column:1/-1">${esc(row === 1 ? t("top.rowBack") : t("top.row", { n: row }))}</div>`) +
       list.map(b => {
         const e = est?.byId[b.id];
         const cur = S.draft[kind][b.id];
         const look = e && prefill(e) === null && (cur == null);
         const hint = e ? (prefill(e) === null ? t("top.needsLook") : t("top.fromPhoto", { level: lvl(e.level), conf: t(`top.conf.${e.confidence}`) })) : "";
-        return `<div class="tp-bin${look ? " look" : ""}"><h3><span>${esc(b.name)}</span><span class="tp-hint">${esc(hint)}</span></h3>
+        const o = was[b.id]?.level;
+        const bar = (v, cls = "") => `<span class="tp-bar ${cls}"><i style="width:${v * 100}%"></i></span>`;
+        const change = o != null && cur != null ? `<div class="tp-change${cur < o ? " drop" : ""}">${bar(o)}<span>${esc(lvl(o))} → ${esc(lvl(cur))}</span>${bar(cur, "now")}</div>` : "";
+        return `<div class="tp-bin${look ? " look" : ""}"><h3><span>${esc(b.name)}</span><span class="tp-hint">${esc(hint)}</span></h3>${change}
           <div class="tp-levels" role="group" aria-label="${esc(b.name)}">${LEVELS.map(v =>
             `<button type="button" data-bin="${esc(b.id)}" data-lv="${v}" aria-pressed="${cur === v}">${esc(lvl(v))}</button>`).join("")}</div></div>`;
       }).join("")).join("");
@@ -301,7 +402,7 @@ function renderNegatives() {
 
 function renderUsage() {
   if (!S.data.checks.close) { $("usageBox").innerHTML = ""; return; }
-  $("usageBox").innerHTML = `<h2>${esc(t("top.usage"))}</h2>` + bins().map(b => {
+  $("usageBox").innerHTML = `<h2>${esc(tk("top.usage"))}</h2>` + bins().map(b => {
     const u = S.data.usage.find(x => x.binId === b.id);
     const val = u?.used == null ? t("top.usageNeedsOpen") : pansText(u.used);
     return `<button type="button" data-why="${esc(b.id)}"><span>${esc(b.name)}</span><b>${esc(val)}</b></button>`;
@@ -437,6 +538,19 @@ async function confirmAll() {
   S.negatives = r.data.negatives || [];
   S.dismissed.clear();
   banner("", "");
+  if (bowls && kind === "open") { S.tab = "close"; preview(null); }
+  await load();
+}
+
+// Table demo: wipe its checks and photos and begin again with the first photo.
+async function startOver() {
+  $("startOver").disabled = true;
+  await call("/api/demo", { method: "POST", body: { action: "reset", scenario: "bowls" } });
+  $("startOver").disabled = false;
+  Object.assign(S, { tab: "open", draft: { open: {}, close: {} }, est: { open: null, close: null }, negatives: [], pending: null });
+  banner("", "");
+  preview(null);
+  $("confirmMsg").textContent = "";
   await load();
 }
 
@@ -453,7 +567,7 @@ async function start() {
   document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => {
     S.tab = b.dataset.tab;
     banner("", "");
-    $("photoPreview").classList.add("hidden");
+    preview(null);
     $("confirmMsg").textContent = "";
     render();
   }));
@@ -462,6 +576,14 @@ async function start() {
   $("takePhoto").addEventListener("click", takePhoto);
   $("camShot").addEventListener("click", shootCamera);
   $("camCancel").addEventListener("click", stopCamera);
+  $("camAnyway").addEventListener("click", shootCamera);
+  $("camPick").addEventListener("click", () => { stopCamera(); $("photoInput").click(); });
+  $("camVideo").addEventListener("loadedmetadata", camShape);
+  $("camVideo").addEventListener("resize", camShape);
+  if (bowls) {
+    $("startOver").classList.remove("hidden");
+    $("startOver").addEventListener("click", startOver);
+  }
   $("camOverlayOn").addEventListener("change", e => $("camOverlay").classList.toggle("hidden", !e.target.checked));
   $("camSheet").addEventListener("keydown", e => { if (e.key === "Escape") stopCamera(); });
   $("confirmAll").addEventListener("click", confirmAll);

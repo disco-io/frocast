@@ -37,6 +37,13 @@ export const DEMO_BINS = [
   { name: "Popping boba", row: 2, col: 3, discard: null, panLabel: null, panCost: null }
 ];
 
+// Table demo (toppings.html?demo=bowls): two real bowls of cut fruit, photographed with the
+// phone. Nothing here is simulated: the photos and the estimates are real.
+export const BOWL_BINS = [
+  { name: "Strawberries", row: 1, col: 1, discard: true, panLabel: "bowl", panCost: null },
+  { name: "Mango", row: 1, col: 2, discard: true, panLabel: "bowl", panCost: null }
+];
+
 // What the "sample photo" returns in demo mode (matches the placeholder pair). Kiwi at close
 // is deliberately unsure so the demo shows a "needs a look" bin.
 export const DEMO_ESTIMATES = {

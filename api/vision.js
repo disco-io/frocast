@@ -1,17 +1,30 @@
 // Topping-bar photo -> fill level per bin (prefill only; staff always confirm).
 //   POST /api/vision { kind: "open" | "close", image: "data:image/jpeg;base64,...", scenario?, day? }
-//   -> { available, photo_usable, problems, bins: [{ id, level, confidence, visible }], photoId, model }
+//   -> { available, photo_usable, problems, bins: [{ id, level, confidence, visible }], photoId, model, compared }
+// A close photo is judged against the same day's confirmed open photo when there is one
+// (compared: true): "how much has it dropped since this photo" is easier to see than a level alone.
 // The photo is stored only if the check passed and no person is in the frame.
 // Any failure returns { available: false } so the close-out falls back to the manual grid.
 import { ready, LOCATION, now } from "./_lib/db.js";
 import { requireDevice, sendError } from "./_lib/auth.js";
 import { estimateBins, visionAvailable, PROBLEMS } from "./_lib/ai.js";
 import { toppingsEnabled, parseDataUrl, purgeOld } from "./_lib/photos.js";
-import { shopNow, isDay } from "./_lib/shop-time.js";
+import { shopNow, isDay, scen } from "./_lib/shop-time.js";
 import { isLevel } from "../js/toppings-math.js";
 import { DEMO_ESTIMATES } from "../js/demo-data.js";
 
 const CONF = ["low", "medium", "high"];
+
+// The same day's confirmed open check: its photo and the levels staff confirmed for it.
+async function openRef(db, scenario, day) {
+  const id = `${scenario}:${day}:open`;
+  const [p, l] = await Promise.all([
+    db.execute({ sql: "SELECT p.mime, p.data FROM topping_checks c JOIN photos p ON p.id = c.photo_id WHERE c.id = ? AND c.location_id = ?", args: [id, LOCATION] }),
+    db.execute({ sql: "SELECT bin_id, level FROM check_levels WHERE check_id = ? AND location_id = ?", args: [id, LOCATION] })
+  ]);
+  if (!p.rows[0] || !l.rows.length) return null;
+  return { mime: p.rows[0].mime, base64: Buffer.from(p.rows[0].data).toString("base64"), levels: Object.fromEntries(l.rows.map(r => [r.bin_id, Number(r.level)])) };
+}
 
 export default async function handler(req, res) {
   try {
@@ -34,8 +47,8 @@ export default async function handler(req, res) {
     if (photo?.tooBig) return sendError(res, 413, "Photo is too large");
 
     const db = await ready();
-    const scenario = req.body.scenario === "demo" ? "demo" : "live";
-    const day = scenario === "demo" && isDay(req.body.day) ? req.body.day : shopNow().day;
+    const scenario = scen(req.body.scenario);
+    const day = scenario !== "live" && isDay(req.body.day) ? req.body.day : shopNow().day;
     // Demo-mode results (not photos) are kept for a day so the test page can score them.
     const reply = async obj => {
       if (scenario === "demo" && !sample) {
@@ -58,9 +71,10 @@ export default async function handler(req, res) {
     }
     if (!visionAvailable()) return reply({ available: false, reason: "no_key" });
 
+    const ref = kind === "close" ? await openRef(db, scenario, day).catch(err => { console.error("vision ref", err.message); return null; }) : null;
     let est;
     try {
-      est = await estimateBins({ base64: photo.base64, mime: photo.mime, bins, kind, allowScreen: scenario === "demo" }); // demo: photos of a screen are fine
+      est = await estimateBins({ base64: photo.base64, mime: photo.mime, bins, kind, ref, allowScreen: scenario !== "live" }); // demos: photos of a screen are fine
     } catch (err) {
       console.error("vision", err.name, err.message);
       return reply({ available: false, reason: err.name === "APIConnectionTimeoutError" ? "timeout" : "error" });
@@ -87,7 +101,7 @@ export default async function handler(req, res) {
       });
       await purgeOld(db);
     }
-    return reply({ available: true, photo_usable: usable, problems, bins: out, photoId, model: est.model });
+    return reply({ available: true, photo_usable: usable, problems, bins: out, photoId, model: est.model, compared: !!ref });
   } catch (err) {
     console.error("vision", err);
     return res.status(200).json({ available: false, reason: "error" });

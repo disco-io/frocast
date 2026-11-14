@@ -141,7 +141,9 @@ export function match(ref, live, w, h) {
 // What to tell the person holding the phone. hint is one of:
 //   ok | lost | turn | closer | back | left | right | up | down   (the way to move the phone)
 // pct is a rough 0-100 "how close" for the meter.
-export function verdict(m, w, h, { turned = false } = {}) {
+// loose: for a photo taken without the live guide (plain camera app), where nobody can hit 5% blind.
+export function verdict(m, w, h, { turned = false, loose = false } = {}) {
+  const tol = loose ? 0.12 : TOL, zoomOk = loose ? [0.84, 1.2] : SCALE_OK;
   if (turned) return { ok: false, hint: "turn", pct: 0 };
   if (!m || m.score < MIN_SCORE) return { ok: false, hint: "lost", pct: 0 };
   const fx = m.dx / w,
@@ -149,9 +151,9 @@ export function verdict(m, w, h, { turned = false } = {}) {
     zoomOff = Math.abs(Math.log(m.scale));
   const off = Math.max(Math.abs(fx), Math.abs(fy), zoomOff * 0.6);
   const pct = Math.round(100 * Math.max(0, 1 - off / 0.25));
-  if (m.scale > SCALE_OK[1]) return { ok: false, hint: "closer", pct };
-  if (m.scale < SCALE_OK[0]) return { ok: false, hint: "back", pct };
-  if (Math.abs(fx) > TOL || Math.abs(fy) > TOL) {
+  if (m.scale > zoomOk[1]) return { ok: false, hint: "closer", pct };
+  if (m.scale < zoomOk[0]) return { ok: false, hint: "back", pct };
+  if (Math.abs(fx) > tol || Math.abs(fy) > tol) {
     // Picture sits too far right -> move the phone right, which slides the picture left.
     const hint =
       Math.abs(fx) >= Math.abs(fy)
