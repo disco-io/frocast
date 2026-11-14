@@ -465,7 +465,7 @@ frocast/
 ├─ vercel.json                           crons (12:00, 13:00 UTC)
 ├─ middleware.ts                         device-cookie gate for /staff/* + staff write APIs
 ├─ drizzle.config.ts · drizzle/          migrations
-├─ config/
+├─ config/                              forecast.config.ts + costs.config.ts
 │  └─ forecast.config.ts                 ALL model knobs (value, source, assumed)
 ├─ data/
 │  ├─ calendar/princeton-2026-27.json
@@ -552,9 +552,33 @@ Times are targets; slip → tell the user, don't silently cut.
 3. What Frocast does (screens, with screenshots)
 4. How to run it (local + deploy, env vars, `DEMO_OFFLINE`)
 5. **Real vs. simulated vs. assumed** table (weather = real; calendar = real, cited; baseline factors = assumed; settings = owner-entered or assumed; demo days = simulated staff actions on real weather)
-6. **Adopt on Monday:** enter 4 settings, pair the counter tablet once with the PIN and leave the clock open on it, add Jenny's number, optionally upload a register CSV, point the domain at Vercel
+6. **Adopt on Monday:** enter 4 settings, pair the counter tablet once with the PIN and leave the clock open on it, add Jenny's number, optionally upload a register CSV, point the domain at Vercel. **Plus the cost line and account handoff in §17.1**
 7. Architecture + swappable interfaces (forecast model, messaging provider, vision provider)
 8. Tracks entered + team + Discord usernames
+
+### 17.1 Running costs and account handoff (Peri will ask)
+**The hackathon deployment runs on the team's accounts and is a demo only.** The shop must not run day to day on it. Vercel's Hobby plan is limited to personal, non-commercial use ([Vercel docs](https://vercel.com/docs/accounts/plans/hobby)), and the team's Claude key and Photon hackathon credits aren't Jenny's.
+
+**Monthly cost table for the README.** Every price is a link to the official pricing page with a "checked on" date. Don't quote a number we haven't verified on that page.
+
+| Service | What it's for | Expected plan | Monthly cost |
+|---|---|---|---|
+| Vercel | Hosting + cron | Pro (commercial use) or another host whose free tier allows business use | from vercel.com/pricing (3rd-party 2026 sources say ~$20/user; verify) |
+| Turso | Database | Free tier is likely enough at one shop's volume; confirm limits and terms | from turso.tech/pricing |
+| Anthropic API | Prep text, replies, menu parsing, close-out vision | Pay as you go, with a **monthly spend limit set in the Console** | **measured**: Settings → Running costs shows month-to-date Claude spend from `llm_usage` tokens × `config/costs.config.ts` per-token prices (value, source, checked date). The README estimate is extrapolated from a measured day of demo use, not guessed |
+| Photon or Twilio | Messaging | Photon pricing after the hackathon credits / Twilio number + per-message fees | Teammate A records it from the provider's pricing page |
+| Domain | Existing shop domain | Keep the current registrar | no change |
+
+**Handoff checklist (README, step by step):**
+1. Jenny (or someone she trusts) creates her own Vercel, Turso, Anthropic Console and Photon/Twilio accounts. We can sit with her for this.
+2. Deploy from the public repo into her Vercel account, using a "Deploy" button that prompts for every env var in `.env.example`, or transfer the Vercel project to her team.
+3. Create her Turso DB and run migrations. Start fresh rather than migrating demo data, and enter her real values in the setup wizard.
+4. **Set new secrets:** `OWNER_PIN`, `DEVICE_SECRET` (this un-pairs every device, so re-pair the counter tablet), `CRON_SECRET`, webhook secrets.
+5. Set a monthly spend limit on her Anthropic key.
+6. Point her domain's DNS at Vercel. HTTPS is automatic.
+7. The team deletes its deployment, keys and Turso DB, and confirms in writing.
+
+**Feature:** `/staff/settings/costs` (owner PIN) shows month-to-date Claude calls, tokens and estimated $, plus message counts per provider, so the owner can always see what it costs.
 
 ---
 
@@ -566,5 +590,6 @@ Times are targets; slip → tell the user, don't silently cut.
 - **Calendar dates:** fall-term start is inferred, and one football date (Oct 31) is low confidence. Verify before the demo.
 - **Nov 14 weather:** capture the fixture tonight (the archive lags by days).
 - **Baseline factors are guesses until the revisit:** say so plainly in the README and UI ("Estimate", assumed badges).
+- **Accounts and cost:** the hackathon deploy is on team accounts (Vercel Hobby = non-commercial). Real adoption needs the §17.1 handoff and the shop paying its own monthly costs.
 - **Model choice:** Opus 5.5 at low effort by default; switch `LLM_MODEL=claude-haiku-5-5` if demo latency hurts.
 - **ChatOverflow leaderboard (handbook):** it would mean connecting this coding agent to an external network. Not done unless the user explicitly opts in.
