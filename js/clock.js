@@ -3,9 +3,10 @@
 // Demo: clock.html?demo=1&day=2026-11-14&min=600 (or postMessage {type:"frocast-time", min, day}).
 import { applyStatic, langToggle, t } from "./i18n.js";
 import { call } from "./api.js";
-import { DEFAULTS, DEFAULT_EVENTS, withFixed, LOCATION } from "./config.js";
+import { DEFAULTS, DEFAULT_EVENTS, withFixed, LOCATION, HOURS, settings } from "./config.js";
 import { demoDay } from "./demo-data.js";
-import { forecast, bobaDemand, iso } from "./model.js";
+import { DOW, forecast, bobaDemand, iso } from "./model.js";
+import { loadShape, source as shapeSource } from "./shape.js";
 import { getWeather } from "./weather.js";
 import { clockState, OPEN, CLOSE } from "./planner.js";
 
@@ -17,6 +18,7 @@ const SOUND_KEY = "frocast-sound";
 
 const S = {
   s: structuredClone(DEFAULTS), events: DEFAULT_EVENTS, days: [],
+  shape: null,   // cached BestTime hourly shape, or baseline (js/shape.js); same one the dashboard uses
   batches: [], lows: [], waste: [], online: true, lastMode: null, last: null,
   simMin: demo && params.has("min") ? Number(params.get("min")) : null,
   simDay: demo && params.get("day") ? params.get("day") : null,
@@ -39,7 +41,7 @@ async function loadShared() {
   if (!src) {
     try { src = JSON.parse(localStorage.getItem("frocast-v1") || "{}"); } catch { src = {}; }
   }
-  S.s = { ...structuredClone(DEFAULTS), ...(src.s || {}), base: { ...DEFAULTS.base, ...(src.s?.base || {}) } };
+  S.s = settings(src.s);
   S.events = withFixed(src.events || []);   // the dashboard never saves fixed events (e.g. HackPrinceton), so add them back
   if (demo) S.events = withFixed(demoDay(todayKey())?.events || []); // demo days use their own (simulated) events
   if (r.status === 401) toPair();
@@ -48,6 +50,11 @@ async function loadShared() {
 async function loadWeather() {
   const { days } = await getWeather(new Date(), LOCATION);
   S.days = days;
+}
+
+// Reads our own cache only (api/shape.js). This never calls BestTime, in live or demo mode.
+async function loadHourShape() {
+  S.shape = await loadShape();
 }
 
 function toPair() {
@@ -85,17 +92,17 @@ function today() {
   const key = todayKey();
   const w = (demo && demoDay(key)?.weather) || S.days.find(d => d.key === key); // demo: the day's real recorded weather
   const [y, m, d] = key.split("-").map(Number);
-  const day = { date: new Date(y, m - 1, d), key, temp: w?.temp ?? 55, rain: !!w?.rain };
+  const day = { date: new Date(y, m - 1, d), key, temp: w?.temp ?? 55, norm: w?.norm, rain: !!w?.rain };
   const fc = forecast(day, S.events, S.s);
-  return { day, fc, hourly: bobaDemand(fc, day, S.events, S.s) };
+  return { day, fc, hourly: bobaDemand(fc, day, S.events, S.s, S.shape) };
 }
 
 // ---------- render ----------
 function render() {
-  const { fc, hourly } = today();
+  const { day, fc, hourly } = today();
   const now = nowMin();
   const st = clockState({ hourly, batches: S.batches, lows: S.lows, now, s: S.s });
-  S.last = { st, fc, now };
+  S.last = { st, fc, now, day };
   document.body.className = `clock mode-${st.mode}`;
   $("nowTime").textContent = hm(now);
 
@@ -198,7 +205,7 @@ function showLeftover(batch, now) {
 
 function openWhy() {
   if (!S.last) return;
-  const { st, fc } = S.last;
+  const { st, fc, day } = S.last;
   const n = st.next;
   if (!n) return;
   const k = st.k;
@@ -213,6 +220,10 @@ function openWhy() {
     row(t("why.cook", { lead: k.lead }), hm(n.cookMin))
   ].join("");
   $("whyFormula").textContent = t("why.formula", { raw: n.raw.toFixed(1), mult: (1 + k.margin).toFixed(2), need: n.need.toFixed(1), size: short(n.frac) });
+  // Where the hour-by-hour numbers come from (relative busyness from BestTime, or our own curve)
+  const dow = DOW[day.date.getDay()];
+  const src = shapeSource(S.shape, dow, HOURS, new Date(), day.date);
+  $("whyShape").textContent = `${t(`shape.${src.kind}`, { date: src.date })}${src.stale ? ` ${t("shape.stale")}` : ""} ${t(S.s.baseSet[dow] ? "shape.totalSet" : "shape.totalAssumed")}`;
   show("whySheet");
 }
 
@@ -294,13 +305,13 @@ async function start() {
     });
   }
 
-  await Promise.all([loadShared(), loadWeather()]);
+  await Promise.all([loadShared(), loadWeather(), loadHourShape()]);
   await refresh();
   keepAwake();
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { keepAwake(); refresh(); } });
   setInterval(refresh, 15000);
   setInterval(render, 10000);
-  setInterval(() => { loadShared(); loadWeather(); }, 30 * 60 * 1000);
+  setInterval(() => { loadShared(); loadWeather(); loadHourShape(); }, 30 * 60 * 1000);
 }
 
 start();

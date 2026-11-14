@@ -29,6 +29,24 @@ npm test                 # pairing, page gate, no-PIN local mode and shared-data
 ```
 `server.js` serves the site, runs the `api/` functions (and the device-pairing check when it is turned on), and keeps data in a local `local.db` file unless `TURSO_*` is set. Without an AI key, everything except the AI event import still works.
 
+## Hourly shape from BestTime.app (optional)
+The hour-by-hour shape of a day can come from [BestTime.app](https://besttime.app)'s foot traffic forecast for the shop.
+BestTime gives **relative busyness (0 to 100), not customer counts**: we only use it to split a day's total across the open hours.
+The day's total still comes from Settings.
+
+```bash
+# put BESTTIME_PRIVATE_API_KEY in .env first (never commit it)
+npm run besttime -- status    # credits used, cache age (no API call)
+npm run besttime -- fetch     # first forecast: 2 credits (1 if it fails)
+npm run besttime -- confirm   # after you check it matched the right shop
+npm run besttime -- refresh   # at most once a week: 2 credits
+```
+
+- The site **never calls BestTime**. `scripts/besttime.js` fetches by hand and caches in `.cache/besttime/`; `api/shape.js` only reads that cache, for paired devices.
+- Without a key or a cache, the site uses our hand-made baseline curve and says so under the hourly chart.
+- Hard cap: 20 credits for the whole project. Every call is logged in `data/besttime/credits.jsonl`: commit that file so the cap is shared.
+- **Don't commit BestTime's data.** Their terms (section 5.3) forbid redistributing raw or analyzed data, so `.cache/` is git-ignored. Showing it inside the app is allowed. A Vercel deploy from git therefore runs on the baseline curve.
+
 ## Deploy
 Import the repo in Vercel (no framework, no build command). Add these under Project → Settings → Environment Variables:
 - `ANTHROPIC_API_KEY`: AI event import
@@ -59,7 +77,8 @@ A time slider (8 AM–11 PM) runs a **simulated** day through the counter-tablet
 Staff can text the shop's number `prep`, `events` or `help` and get the plan back (iMessage, through Photon). It runs inside `npm start`: when `PHOTON_PROJECT_ID`, `PHOTON_API_KEY`, `PHOTON_AGENT_HANDLE` and `PHOTON_TEST_SENDER` are in `.env`, the terminal prints `Photon agent: on`. Leave them out and it stays off; set `PHOTON_AGENT=0` to switch it off. It answers only the phones listed in `PHOTON_TEST_SENDER`, and only texts sent after it started. It uses the same saved settings and events as the dashboard, plus its own read of the calendar sources. `npm run agent` runs it alone (don't run both).
 
 ## Honest notes
-- Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings.
+- Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings. The typical-day totals (125 weekday, 185 weekend day) are illustrative figures from franchise benchmarks, not this shop's data, and show an "assumed" badge until the owner sets them.
+- The typical day and the hourly shape describe recent weeks, so weather counts only as warmer or colder than the last 4 weeks, not as an absolute cold penalty.
 - Some events are read from web pages by AI, so check the dates. The academic calendar source is a third-party page (the Princeton Registrar blocks automated access), so confirm break dates with the Registrar.
 - Savings shown are **estimates**. Food-safety limits come from the shop.
 - Data is shared through Turso when the server is running. On plain static hosting it falls back to this browser only.

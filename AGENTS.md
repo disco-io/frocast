@@ -46,6 +46,7 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 | Person / agent | Task | Files | Started |
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
+| Dzau (Claude) | BestTime hourly shape | new: `js/shape.js`, `api/shape.js`, `scripts/besttime.js`, `tests/shape.test.mjs`, `tests/besttime.test.mjs`; small edits in `js/model.js` (forecast weather row, hourly), `js/weather.js`, `js/config.js` (base), `js/app.js`, `index.html`, `css/styles.css` | Sat 14:45 |
 
 ## Project layout
 ```
@@ -53,12 +54,15 @@ index.html          page shell and tabs
 css/styles.css      all styles
 js/config.js        shop settings, event types, default events
 js/model.js         forecast, hourly curve, boba / fruit / machine plans
+js/shape.js         hourly shape from the cached BestTime forecast (relative busyness → weights), source labels
 js/weather.js       live forecast (Open-Meteo), sample fallback
 js/store.js         saves data in the browser (localStorage)
 js/app.js           rendering and UI events
 api/events.js       Vercel-style function: AI pulls events out of pasted calendar text
 api/sync.js         reads every calendar source (feeds + web pages) and returns dated events
 api/_lib.js         shared helpers: fetch, .ics parser, AI calls (not a route)
+api/shape.js        serves the cached hourly shape to paired devices (reads the cache only, never calls BestTime)
+scripts/besttime.js fetches and caches the BestTime forecast by hand, with the credit log (npm run besttime)
 server.js           local dev server: serves the site and runs api/ (npm start)
 .env.example        template for .env (the real .env is never committed)
 ```
@@ -73,3 +77,4 @@ server.js           local dev server: serves the site and runs api/ (npm start)
 - Never present estimated savings as exact numbers.
 - Food-safety limits (how long boba and fruit stay good) come from the shop, never from us.
 - Never commit API keys. The AI key lives in your local `.env` (and later in Vercel's environment variables) as `ANTHROPIC_API_KEY`.
+- BestTime data is relative busyness, not customer counts, and it is not Google data: label it that way. Never commit BestTime's responses (`.cache/` is git-ignored; their terms forbid redistribution). Only `scripts/besttime.js` may call BestTime, and it enforces the 20-credit cap.
