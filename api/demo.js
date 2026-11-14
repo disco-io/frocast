@@ -3,7 +3,7 @@
 //   POST /api/demo { action: "reset" }   clear all demo rows, then seed demo bins and two weeks
 //                                        of SIMULATED topping history before each demo day
 //   POST /api/demo { action: "reset", scenario: "bowls" }   table demo: clear its checks and
-//                                        photos and set up the two fruit bowls (no history)
+//                                        photos and set up the one fruit cup (no history)
 import { ready, LOCATION, now } from "./_lib/db.js";
 import { requireDevice, sendError } from "./_lib/auth.js";
 import { DEMO_DAYS, DEMO_BINS, BOWL_BINS, demoHistory } from "../js/demo-data.js";
@@ -60,7 +60,7 @@ async function seed(db) {
   return { bins: DEMO_BINS.length, levels: rows };
 }
 
-// Table demo: two bowls, no history. Only touches rows with scenario 'bowls'.
+// Table demo: one cup of strawberries, no history. Only touches rows with scenario 'bowls'.
 async function seedBowls(db) {
   const stmts = [
     ...["waste_log", "refills", "photos", "topping_checks", "suggestions"].map(tbl =>

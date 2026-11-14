@@ -1,17 +1,17 @@
 // Topping bar check: open and close checks (photo prefill or by hand), refills during the
 // day, usage per bin, and the "Why?" view. Behind the TOPPING_CAMERA feature flag.
 // Demo: toppings.html?demo=1&day=2026-11-14&min=1380
-// Table demo with two real bowls of fruit: toppings.html?demo=bowls
+// Table demo with one real cup of strawberries: toppings.html?demo=bowls
 import { applyStatic, langToggle, t } from "./i18n.js";
 import { call } from "./api.js";
 import { LEVELS, prefill, usage, discards } from "./toppings-math.js";
-import { DEMO_PHOTOS } from "./demo-data.js";
+import { DEMO_PHOTOS, BOWL_BINS } from "./demo-data.js";
 import { GW, gridH, grid, match, verdict } from "./align.js";
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const demo = params.get("demo") === "1";
-const bowls = params.get("demo") === "bowls"; // two real bowls on a table: real photos, no simulated data
+const bowls = params.get("demo") === "bowls"; // one real cup on a table: real photos, no simulated data
 const S = {
   tab: "open", data: null, owner: false, enabled: false,
   draft: { open: {}, close: {} }, est: { open: null, close: null }, dismissed: new Set(), negatives: [], newBins: 0
@@ -31,7 +31,7 @@ function pans(n) {
   const sign = n < 0 ? "−" : "", a = Math.abs(Math.round(n * 4) / 4), whole = Math.floor(a), frac = a - whole;
   return `${sign}${whole || !frac ? whole : ""}${FR[frac] || ""}`;
 }
-const pansText = n => t(`top.${bowls ? "bowl" : "pan"}${n !== 0 && Math.abs(n) <= 1 ? "" : "s"}`, { n: pans(n) }); // "½ bowl", "0 bowls", "1¼ bowls"
+const pansText = n => t(`top.${bowls ? "bowl" : "pan"}${n !== 0 && Math.abs(n) <= 1 ? "" : "s"}`, { n: pans(n) }); // table demo: "½ of the cup", "0 cups", "1¼ cups"
 const timeOf = iso => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const minText = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 const bins = () => S.data?.bins || [];
@@ -71,7 +71,8 @@ async function load() {
   ]);
   if (r.status === 401) { location.href = `/pair.html?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
   if (!r.ok) return;
-  if (bowls && !r.data.bins.length && !S.seeded) {
+  // Table demo: set it up when it's empty, or still holds the bins of an older version (two bowls).
+  if (bowls && !S.seeded && r.data.bins.map(b => b.name).join() !== BOWL_BINS.map(b => b.name).join()) {
     S.seeded = true;
     await call("/api/demo", { method: "POST", body: { action: "reset", scenario: "bowls" } });
     return load();
@@ -174,7 +175,7 @@ function showResult(kind, res) {
   }
   S.est[kind] = { ...res, byId: Object.fromEntries(res.bins.map(b => [b.id, b])) };
   for (const b of bins()) S.draft[kind][b.id] = prefill(S.est[kind].byId[b.id]);
-  banner("ok", esc(t(res.compared ? "top.compared" : "top.prefilled")));
+  banner("ok", esc(tk(res.compared ? "top.compared" : "top.prefilled")));
   render();
 }
 
@@ -217,7 +218,7 @@ async function takePhoto() {
   const over = S.tab === "close" ? overlaySrc() : null;
   Object.assign(A, { lock: S.tab === "close" && !!refSrc(), ref: null, good: 0, bad: 0, ready: false, since: Date.now(), hint: "" });
   $("camVideo").srcObject = camStream;
-  $("camTitle").textContent = over ? tk("top.camTitle") : t("top.camTitleOpen");
+  $("camTitle").textContent = over ? tk("top.camTitle") : tk("top.camTitleOpen");
   $("camOverlayText").textContent = tk("top.camOverlay");
   if (over) $("camOverlay").src = over; else $("camOverlay").removeAttribute("src");
   $("camOverlay").classList.toggle("hidden", !over || !$("camOverlayOn").checked);
@@ -521,7 +522,7 @@ function renderBins() {
 async function confirmAll() {
   const kind = S.tab;
   const missing = bins().filter(b => S.draft[kind][b.id] == null);
-  if (missing.length) return say("confirmMsg", t("top.missing", { n: missing.length }), "red");
+  if (missing.length) return say("confirmMsg", tk("top.missing", { n: missing.length }), "red");
   const est = S.est[kind];
   const body = {
     ...ctx(), action: "confirm", kind,

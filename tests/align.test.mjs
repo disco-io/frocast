@@ -1,4 +1,4 @@
-// Photo line-up check: a made-up table scene (two bowls, a few objects) is "photographed"
+// Photo line-up check: a made-up table scene (two bowls or one cup, a few objects) is "photographed"
 // from slightly different camera positions and the hint must say which way to move the phone.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -18,10 +18,12 @@ function rng(seed) {
 }
 
 // A scene in table coordinates (0-1 across the reference frame): discs with a fill brightness.
-function scene(seed, { leftFill = 0.25 } = {}) {
+// cup: one cup in the middle instead of the two bowls, with `things` other objects around it.
+function scene(seed, { leftFill = 0.25, cup = false, things: count = 7 } = {}) {
   const r = rng(seed);
-  const things = Array.from({ length: 7 }, () => ({ x: -0.3 + r() * 1.6, y: -0.3 + r() * 1.6, rad: 0.03 + r() * 0.06, v: r() }));
-  const bowls = [{ x: 0.3, y: 0.55, rad: 0.17, v: 0.95, fill: leftFill }, { x: 0.7, y: 0.55, rad: 0.17, v: 0.95, fill: 0.7 }];
+  const things = Array.from({ length: count }, () => ({ x: -0.3 + r() * 1.6, y: -0.3 + r() * 1.6, rad: 0.03 + r() * 0.06, v: r() }));
+  const bowls = cup ? [{ x: 0.5, y: 0.55, rad: 0.17, v: 0.95, fill: leftFill }]
+    : [{ x: 0.3, y: 0.55, rad: 0.17, v: 0.95, fill: leftFill }, { x: 0.7, y: 0.55, rad: 0.17, v: 0.95, fill: 0.7 }];
   return (x, y) => {
     let v = 0.55 + 0.1 * Math.sin(x * 9) * Math.cos(y * 7); // table pattern
     for (const t of things) if (Math.hypot(x - t.x, y - t.y) < t.rad) v = t.v;
@@ -54,6 +56,17 @@ test("same spot lines up, even in different light and with the left bowl half em
   assert.equal(check(ref, shoot(scene(3), { gain: 0.7, noise: 0.05, seed: 4 })).hint, "ok", "dimmer light");
   const emptied = check(ref, shoot(scene(3, { leftFill: 0.9 }), { cx: 0.01, noise: 0.05, seed: 5 }));
   assert.equal(emptied.ok, true, "fruit removed from one bowl still lines up");
+});
+
+test("one cup lines up after fruit is taken out, even alone on the table", () => {
+  for (const things of [3, 0]) {
+    const ref = shoot(scene(3, { cup: true, things }));
+    for (const leftFill of [0.5, 0.9]) {
+      const v = check(ref, shoot(scene(3, { cup: true, things, leftFill }), { cx: 0.01, noise: 0.05, seed: 5 }));
+      assert.equal(v.ok, true, `${things} other objects, inside of the cup now ${leftFill}`);
+    }
+    assert.equal(check(ref, shoot(scene(3, { cup: true, things, leftFill: 0.9 }), { cx: 0.12 })).hint, "left", "the cup still gives the direction");
+  }
 });
 
 test("hints say which way to move the phone", () => {

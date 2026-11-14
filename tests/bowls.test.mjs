@@ -1,5 +1,5 @@
-// Table demo (two bowls of fruit): its own data set beside live and demo, a close photo that is
-// compared with the confirmed open photo, usage per bowl, and a reset that touches nothing else.
+// Table demo (one cup of strawberries): its own data set beside live and demo, a close photo that
+// is compared with the confirmed open photo, usage for the cup, and a reset that touches nothing else.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { tmpdir } from "node:os";
@@ -40,28 +40,28 @@ const see = levels => {
   writeFileSync(stub, JSON.stringify({ photo_usable: true, problems: [], bins: Object.entries(levels).map(([id, level]) => ({ id, level, confidence: "high", visible: true })) }));
   process.env.VISION_STUB = stub;
 };
-const STRAW = "bowl-strawberries", MANGO = "bowl-mango";
+const STRAW = "bowl-strawberries";
 
-test("reset sets up the two bowls and leaves live and demo bins alone", async () => {
+test("reset sets up the one cup and leaves live and demo bins alone", async () => {
   await post({ action: "saveBin", bin: { name: "Live mochi", row: 1, col: 1 } });
   await post({ action: "reset" }, "demo");
   const r = await post({ action: "reset", scenario: "bowls" }, "demo");
-  assert.deepEqual([r.status, r.data.bins], [200, 2]);
+  assert.deepEqual([r.status, r.data.bins], [200, 1]);
   const d = await get(B);
-  assert.deepEqual(d.bins.map(b => [b.id, b.name, b.col_no]), [[STRAW, "Strawberries", 1], [MANGO, "Mango", 2]]);
+  assert.deepEqual(d.bins.map(b => [b.id, b.name, b.pan_label]), [[STRAW, "Strawberries", "cup"]]);
   assert.equal((await get({ scenario: "live" })).bins.length, 1);
   assert.equal((await get({ scenario: "demo", day: "2026-11-14" })).bins.length, 6);
 });
 
 test("the second photo is compared with the confirmed first photo: full -> half", async () => {
-  see({ [STRAW]: 1, [MANGO]: 1 });
+  see({ [STRAW]: 1 });
   const first = await post({ ...B, kind: "open", image: IMG }, "vision");
   assert.equal(first.data.available, true);
   assert.equal(first.data.compared, false, "nothing to compare the first photo with");
   assert.ok(first.data.photoId);
   const levels = est => est.bins.map(b => ({ binId: b.id, level: b.level, estimate: b }));
 
-  see({ [STRAW]: 0.5, [MANGO]: 1 });
+  see({ [STRAW]: 0.5 });
   const early = await post({ ...B, kind: "close", image: IMG }, "vision");
   assert.equal(early.data.compared, false, "an unconfirmed first photo is not a yardstick");
 
@@ -70,7 +70,7 @@ test("the second photo is compared with the confirmed first photo: full -> half"
   assert.equal(second.data.compared, true);
   const done = await post({ ...B, action: "confirm", kind: "close", levels: levels(second.data), estimator: "vision", photoId: second.data.photoId, model: second.data.model, photoUsable: true });
   const used = Object.fromEntries(done.data.usage.map(u => [u.binId, u.used]));
-  assert.deepEqual(used, { [STRAW]: 0.5, [MANGO]: 0 });
+  assert.deepEqual(used, { [STRAW]: 0.5 });
 
   const d = await get(B);
   assert.equal(d.checks.open.levels[STRAW].level, 1);
@@ -91,14 +91,14 @@ test("live close checks get the same comparison", async () => {
   assert.equal((await post({ kind: "close", image: IMG }, "vision")).data.compared, false);
 });
 
-test("start over clears the bowls' checks and photos only", async () => {
+test("start over clears the cup's checks and photos only", async () => {
   const db = await ready();
   const photos = async s => Number((await db.execute({ sql: "SELECT COUNT(*) AS n FROM photos WHERE scenario = ?", args: [s] })).rows[0].n);
   assert.ok((await photos("bowls")) >= 2);
   const live = await photos("live");
   await post({ action: "reset", scenario: "bowls" }, "demo");
   const d = await get(B);
-  assert.deepEqual([d.checks.open, d.checks.close, d.waste.length, d.bins.length], [null, null, 0, 2]);
+  assert.deepEqual([d.checks.open, d.checks.close, d.waste.length, d.bins.length], [null, null, 0, 1]);
   assert.equal(await photos("bowls"), 0);
   assert.equal(await photos("live"), live);
   assert.equal((await get({ scenario: "demo", day: "2026-11-14" })).bins.length, 6);

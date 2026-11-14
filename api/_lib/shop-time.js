@@ -9,7 +9,7 @@ export function shopNow(date = new Date()) {
 }
 
 // Which data set a request works on: the shop's real data, the simulated demo day, or the
-// two-bowl table demo. Anything unknown is "live".
+// table demo (one cup of strawberries). Anything unknown is "live".
 export const scen = v => (v === "demo" || v === "bowls" ? v : "live");
 
 export const isDay = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ""));
