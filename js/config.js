@@ -11,6 +11,8 @@ export const DEFAULTS = {
   fruitShare: 0.4,      // share of froyo cups with fresh fruit
   cupsPerContainer: 25, // fruit cups one cut container covers
   cushion: 0.2,         // how much busier than forecast the backup plan covers (0.2 = 20% more customers)
+  bobaMargin: 0.25,     // batch clock cooks this much extra so the shop doesn't run out
+  photoDays: 14,        // days to keep topping-bar photos (the confirmed numbers stay)
   calib: 1.0            // learned correction from closing logs
 };
 
@@ -24,7 +26,9 @@ export const SETTING_FIELDS = [
   ["oldBatches", "Current routine: full batches per day", 1, 1, 10],
   ["fruitShare", "Share of froyo cups with fresh fruit", 0.05, 0, 1],
   ["cupsPerContainer", "Fruit cups per cut container", 1, 1, 200],
-  ["cushion", "Busy-day backup: how much busier to plan for (0.2 = 20% more)", 0.05, 0, 1]
+  ["cushion", "Busy-day backup: how much busier to plan for (0.2 = 20% more)", 0.05, 0, 1],
+  ["bobaMargin", "Extra boba to cook so you don't run out (0.25 = 25%)", 0.05, 0, 1],
+  ["photoDays", "Days to keep topping-bar photos", 1, 1, 90]
 ];
 
 // Shop hours (10 AM – 11 PM) and the usual shape of a day (evening-heavy)
