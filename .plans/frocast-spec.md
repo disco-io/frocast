@@ -121,6 +121,30 @@ The staff pages share a public deployment with the customer site, and the README
 - Inbound messaging webhooks use signature verification plus the owner allowlist (§7.1). The cron uses `CRON_SECRET`.
 - The README and Devpost link only the public site and `/demo`, never `/staff`.
 
+### 4.7 Design tokens (team palette, 2026-11-14)
+Put these in `app/globals.css` as CSS custom properties and map them in `tailwind.config.ts`. Every screen uses the tokens, never raw hex.
+```css
+:root {
+  --fy-orange: #E8742C; --fy-orange-deep: #B8470F; --fy-coral: #E4815A; --fy-pink: #F2C6C8;
+  --fy-lime: #C9D77A; --fy-leaf: #3F6212; --fy-grape: #6D5BA8; --fy-cream: #FFF9F0;
+  --fy-peach: #FDEBDD; --fy-charcoal: #1F1A17; --fy-warm-grey: #6B5B4E;
+  --state-fresh: #2F7D32; --state-soon: #F5B83D; --state-discard: #B3261E;
+}
+```
+| Role | Token | Notes |
+|---|---|---|
+| Page background / ink / secondary ink | cream / charcoal / warm-grey | Contrast checked: charcoal on cream 16.5:1, warm-grey on cream 6.2:1 |
+| Highlight panels, hover wash | peach | |
+| Chart series: **froyo** / **tea** | orange / grape | Passes the colorblind and normal-vision checks. Orange is 2.88:1 on cream, so charts always show a legend and tooltips and offer a table view |
+| Frocast batch blocks | leaf | White text 7.1:1 |
+| Links, "more than usual" delta | orange-deep | 5.1:1 on cream |
+| "Assumed" badges | pink, charcoal text | 11.2:1 |
+| "Today" tag | lime, charcoal text | |
+| **Batch clock states** (§6.2) | GREEN = state-fresh, AMBER = state-soon, RED = state-discard, GREY = warm-grey | Use charcoal text on state-soon; check that white text on state-fresh meets 4.5:1 at the instruction size |
+| Usual-schedule bars | `#E9DED2` (warm-grey tint) | Older than 3 h = state-soon, sold out = state-discard, each with a text label |
+
+Reference mockup of the dashboard using these tokens: the Frocast Dashboard design artifact on claude.ai. It's a design reference only, not app code.
+
 ---
 
 ## 5. Section 1 — Demand forecast (foundation; Claude)
