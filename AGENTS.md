@@ -46,7 +46,7 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 | Person / agent | Task | Files | Started |
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
-| Drew (Claude) | Froyo/tea split in the forecast | `js/config.js` `js/model.js` (forecast, bobaPlan, fruitPlan, machines); `js/app.js` (Today why rows, chart, outlook); `index.html` (chart legend only); new `tests/model.test.mjs` | Sat 15:40 |
+| Drew (Claude) | Boba batch clock, then topping photo check | new: `clock.html` `js/clock.js` `js/planner.js` `css/clock.css` `api/boba.js` `api/_lib/shop-time.js` `tests/planner.test.mjs` `tests/boba.test.mjs`; `db/schema.js`; `js/strings.js`; `index.html` (header link only) | Sat 16:10 |
 
 ## Project layout
 ```

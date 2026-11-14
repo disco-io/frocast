@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FroCast · boba clock</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧋</text></svg>">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/clock.css">
+</head>
+<body class="clock mode-loading">
+<main class="clk">
+  <div class="clk-top">
+    <a class="clk-back" href="/" data-t="clock.back">← Dashboard</a>
+    <span class="clk-now" id="nowTime"></span>
+    <span class="clk-tools">
+      <button class="clk-chip" id="sound" type="button" aria-pressed="true" data-t="clock.sound">Sound</button>
+      <button class="clk-chip" id="lang" type="button">Español</button>
+    </span>
+  </div>
+
+  <div class="clk-main" aria-live="polite">
+    <div class="clk-big" id="instr">…</div>
+    <div class="clk-sub" id="sub"></div>
+    <button class="clk-why" id="whyBtn" type="button" data-t="clock.why">Why this?</button>
+  </div>
+
+  <div class="clk-status" id="status"></div>
+  <div class="clk-strip" id="strip" aria-hidden="true"></div>
+
+  <div class="clk-actions">
+    <button class="clk-act" id="cooked" type="button" data-t="clock.cooked">Batch cooked</button>
+    <button class="clk-act" id="low" type="button" data-t="clock.low">Running low</button>
+  </div>
+
+  <div class="clk-foot"><span id="foot"></span> <span class="clk-pill" data-t="clock.estimate">estimate</span><br><span id="waste"></span></div>
+  <div class="clk-offline hidden" id="offline" data-t="clock.offline"></div>
+</main>
+
+<div class="clk-sheet hidden" id="sizeSheet" role="dialog" aria-modal="true" aria-labelledby="sizeTitle">
+  <div class="clk-card">
+    <h2 id="sizeTitle" data-t="clock.sizeTitle">How big a batch did you cook?</h2>
+    <div class="clk-sizes" id="sizes"></div>
+    <button class="clk-cancel" id="sizeCancel" type="button" data-t="clock.cancel">Cancel</button>
+  </div>
+</div>
+
+<div class="clk-sheet hidden" id="leftSheet" role="dialog" aria-modal="true" aria-labelledby="leftTitle">
+  <div class="clk-card">
+    <h2 id="leftTitle"></h2>
+    <div class="clk-sizes" id="levels"></div>
+  </div>
+</div>
+
+<div class="clk-sheet hidden" id="whySheet" role="dialog" aria-modal="true" aria-labelledby="whyTitle">
+  <div class="clk-card">
+    <h2 id="whyTitle" data-t="why.title">Why this batch?</h2>
+    <div class="why" id="whyRows"></div>
+    <div class="formula" id="whyFormula"></div>
+    <button class="clk-cancel" id="whyClose" type="button" data-t="why.close">Close</button>
+  </div>
+</div>
+
+<div class="clk-toast hidden" id="toast" role="status"><span id="toastText"></span> <button type="button" id="toastUndo" class="clk-undo hidden" data-t="clock.undo">Undo</button></div>
+
+<script type="module" src="js/clock.js"></script>
+</body>
+</html>
