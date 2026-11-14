@@ -60,7 +60,7 @@ export default async function handler(req, res) {
 
     let est;
     try {
-      est = await estimateBins({ base64: photo.base64, mime: photo.mime, bins, kind });
+      est = await estimateBins({ base64: photo.base64, mime: photo.mime, bins, kind, allowScreen: scenario === "demo" }); // demo: photos of a screen are fine
     } catch (err) {
       console.error("vision", err.name, err.message);
       return reply({ available: false, reason: err.name === "APIConnectionTimeoutError" ? "timeout" : "error" });

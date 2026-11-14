@@ -45,11 +45,15 @@ const keyOk = () => {
 };
 export const visionAvailable = () => !!process.env.VISION_STUB || keyOk();
 
-export async function estimateBins({ base64, mime, bins, kind }) {
+// Demo/testing only: the topping bar may be a picture on a screen (tools/testbar/viewer.html).
+const SCREEN_NOTE = `Testing note: this photo may show the topping bar on a computer or TV screen. If it does, judge the topping bar shown on the screen as if it were the real bar, and ignore the screen frame, browser window, menu bar and desktop around it. Don't count the screen itself as not_topping_bar, glare or view_blocked; still report real problems with the bar as shown (glare on it, blur, darkness, bins cut off, a person).`;
+
+export async function estimateBins({ base64, mime, bins, kind, allowScreen = false }) {
   if (process.env.VISION_STUB) return { ...JSON.parse(readFileSync(process.env.VISION_STUB, "utf8")), model: "stub" };
   if (!keyOk()) return { unavailable: true, reason: "no_key" };
   const client = new Anthropic({ timeout: 20000, maxRetries: 1 });
   const list = bins.map(b => `- id ${JSON.stringify(b.id)}: ${JSON.stringify(b.name)} (row ${b.row_no}, column ${b.col_no})`).join("\n");
+  const intro = `This is the ${kind === "close" ? "closing" : "opening"} photo.${allowScreen ? ` ${SCREEN_NOTE}` : ""}`;
   const msg = await client.messages.parse({
     model: VISION_MODEL,
     max_tokens: 4000,
@@ -58,7 +62,7 @@ export async function estimateBins({ base64, mime, bins, kind }) {
       role: "user",
       content: [
         { type: "image", source: { type: "base64", media_type: mime, data: base64 } },
-        { type: "text", text: `This is the ${kind === "close" ? "closing" : "opening"} photo. Bins:\n${list}` }
+        { type: "text", text: `${intro} Bins:\n${list}` }
       ]
     }],
     output_config: { format: jsonSchemaOutputFormat(SCHEMA) }
