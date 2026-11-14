@@ -5,11 +5,13 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "check": "for f in server.js middleware.js js/*.js api/*.js api/_lib/*.js db/*.js; do node --check \"$f\" || exit 1; done",
+    "agent": "node --env-file=.env photon-agent.js",
+    "check": "for f in server.js middleware.js photon-agent.js js/*.js api/*.js api/_lib/*.js db/*.js; do node --check \"$f\" || exit 1; done",
     "test": "node --test \"tests/*.test.mjs\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
-    "@libsql/client": "0.18.0"
+    "@libsql/client": "0.18.0",
+    "@photon-ai/api": "^0.5.0"
   }
 }
