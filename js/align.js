@@ -33,7 +33,8 @@ export function gray(rgba, w, h, k = 1) {
 
 // Take out lighting: each cell minus the average of its neighborhood. What is left is shape
 // (rims, edges, the table's pattern), which is what stays put between the two photos.
-export function detail(g, w, h, r = Math.round(w / 8)) {
+// A small neighborhood (w/16) keeps a different scene with similar lighting from passing.
+export function detail(g, w, h, r = Math.round(w / 16)) {
   const sat = new Float64Array((w + 1) * (h + 1)); // summed-area table
   for (let y = 0; y < h; y++) {
     let row = 0;

@@ -1,7 +1,7 @@
 // Table demo test photos: two bowls (strawberries left, mango right) drawn before and after
 // some fruit is taken out, from the same camera spot, with a known answer key. Then score the
 // photo check on them, with and without the earlier photo as a yardstick.
-//   node tools/testbar/bowls.mjs make [seed=5]        -> tools/testbar/out/bowls/*.jpg + key.json
+//   node tools/testbar/bowls.mjs make [seed=5]        -> tools/testbar/out-bowls/*.jpg + key.json
 //   node tools/testbar/bowls.mjs score [--base http://localhost:8000]
 // score needs the server running with ANTHROPIC_API_KEY and TOPPING_CAMERA=1. It uses the
 // table-demo data set (scenario "bowls") on made-up days and resets it afterwards.
@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { W, H, F, CX, CY, CAM_H, rng, proj, pts, chunk, cube, counter, defs } from "./generate.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const OUT = path.join(DIR, "out", "bowls");
+const OUT = path.join(DIR, "out-bowls"); // not inside out/: generate.mjs clears that folder
 const LABEL = { 0: "empty", 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "full" };
 
 // before -> after levels. The first pair is the demo itself: strawberries full -> half.
@@ -121,9 +121,12 @@ function make() {
     names.push(`${n}-before`, `${n}-after`);
     key.push({ before: `${n}-before.jpg`, after: `${n}-after.jpg`, levels: { before, after } });
   });
-  // The same "after" as pair 1 from the wrong spot, for trying the line-up lock.
-  writeFileSync(path.join(OUT, "01-after-off.svg"), scene(PAIRS[0][1], seed * 100 + 50, [190, 60, 1]));
-  names.push("01-after-off");
+  // The same "after" as pair 1 from wrong spots (sideways, too far, too near, too low), for trying the line-up lock.
+  const off = { off: [190, 60, 1], far: [0, 0, 0.8], near: [0, 0, 1.22], low: [0, -150, 1] };
+  for (const [name, move] of Object.entries(off)) {
+    writeFileSync(path.join(OUT, `01-after-${name}.svg`), scene(PAIRS[0][1], seed * 100 + 50, move));
+    names.push(`01-after-${name}`);
+  }
   writeFileSync(path.join(OUT, "key.json"), JSON.stringify({ seed, made: new Date().toISOString(), pairs: key }, null, 2));
   render(OUT, names);
   console.log(`Made ${key.length} before/after pairs in ${OUT}`);

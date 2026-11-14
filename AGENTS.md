@@ -47,7 +47,6 @@ Staff fill in a 30-second closing log each night, and the forecast learns from i
 |---|---|---|---|
 | Sophia (Claude) | Initial site build | everything (first commit) | Sat 12:30 |
 | Dzau (Claude) | BestTime hourly shape | new: `js/shape.js`, `api/shape.js`, `scripts/besttime.js`, `tests/shape.test.mjs`, `tests/besttime.test.mjs`; small edits in `js/model.js` (forecast weather row, hourly), `js/weather.js`, `js/config.js` (base, `settings()`), `js/app.js`, `js/clock.js` + `clock.html` + `js/strings.js` (shape, norm, Why line), `index.html`, `css/styles.css` | Sat 14:45 |
-| Dzau (Claude) | Two-bowl photo demo: line-up lock, before/after compare | new: `js/align.js`, `tests/align.test.mjs`, `tests/bowls.test.mjs`, `tools/testbar/bowls.mjs`; edits in `api/_lib/ai.js`, `api/vision.js`, `js/toppings.js`, `toppings.html`, `css/toppings.css`; small edits in `api/toppings.js`, `api/demo.js`, `api/_lib/shop-time.js`, `js/demo-data.js`, `js/strings.js` (new `top.*` keys), `tools/testbar/generate.mjs` (exports only) | Sat 17:40 |
 
 ## Project layout
 ```
@@ -57,6 +56,7 @@ js/config.js        shop settings, event types, default events
 js/model.js         forecast, hourly curve, boba / fruit / machine plans
 js/shape.js         hourly shape from the cached BestTime forecast (relative busyness → weights), source labels
 js/weather.js       live forecast (Open-Meteo), sample fallback
+js/align.js         photo line-up check: is the camera on the same spot as an earlier photo (shift, distance, move hints)
 js/store.js         saves data in the browser (localStorage)
 js/app.js           rendering and UI events
 api/events.js       Vercel-style function: AI pulls events out of pasted calendar text

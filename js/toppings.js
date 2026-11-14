@@ -31,7 +31,7 @@ function pans(n) {
   const sign = n < 0 ? "−" : "", a = Math.abs(Math.round(n * 4) / 4), whole = Math.floor(a), frac = a - whole;
   return `${sign}${whole || !frac ? whole : ""}${FR[frac] || ""}`;
 }
-const pansText = n => t(`top.${bowls ? "bowl" : "pan"}${Math.abs(n) === 1 ? "" : "s"}`, { n: pans(n) });
+const pansText = n => t(`top.${bowls ? "bowl" : "pan"}${n !== 0 && Math.abs(n) <= 1 ? "" : "s"}`, { n: pans(n) }); // "½ bowl", "0 bowls", "1¼ bowls"
 const timeOf = iso => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const minText = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 const bins = () => S.data?.bins || [];
