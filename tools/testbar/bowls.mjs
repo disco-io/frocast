@@ -1,16 +1,17 @@
-// Table demo test photos: two bowls (strawberries left, mango right) drawn before and after
-// some fruit is taken out, from the same camera spot, with a known answer key. Then score the
+// Table demo test photos: one cup of strawberries drawn before and after some fruit is taken
+// out, from the same camera spot, with a known answer key. Then score the
 // photo check on them, with and without the earlier photo as a yardstick.
 //   node tools/testbar/bowls.mjs make [seed=5]        -> tools/testbar/out-bowls/*.jpg + key.json
 //   node tools/testbar/bowls.mjs score [--base http://localhost:8000]
 // score needs the server running with ANTHROPIC_API_KEY and TOPPING_CAMERA=1. It uses the
 // table-demo data set (scenario "bowls") on made-up days and resets it afterwards.
-// These are drawings, not photos: they catch regressions. Real bowls are the real test.
+// These are drawings, not photos: they catch regressions. A real cup is the real test.
+// (The file and folder keep the "bowls" name from when the demo used two bowls.)
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { W, H, F, CX, CY, CAM_H, rng, proj, pts, chunk, cube, counter, defs } from "./generate.mjs";
+import { W, H, F, CX, CY, CAM_H, rng, proj, pts, chunk, counter, defs } from "./generate.mjs";
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(DIR, "out-bowls"); // not inside out/: generate.mjs clears that folder
@@ -18,25 +19,24 @@ const LABEL = { 0: "empty", 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "full" };
 
 // before -> after levels. The first pair is the demo itself: strawberries full -> half.
 const PAIRS = [
-  [{ Strawberries: 1, Mango: 1 }, { Strawberries: 0.5, Mango: 1 }],
-  [{ Strawberries: 1, Mango: 1 }, { Strawberries: 0.25, Mango: 0.75 }],
-  [{ Strawberries: 1, Mango: 0.75 }, { Strawberries: 0.75, Mango: 0.25 }],
-  [{ Strawberries: 0.75, Mango: 1 }, { Strawberries: 0, Mango: 0.5 }],
-  [{ Strawberries: 1, Mango: 1 }, { Strawberries: 1, Mango: 0.5 }],
-  [{ Strawberries: 0.5, Mango: 0.5 }, { Strawberries: 0.25, Mango: 0.5 }]
+  [{ Strawberries: 1 }, { Strawberries: 0.5 }],
+  [{ Strawberries: 1 }, { Strawberries: 0.25 }],
+  [{ Strawberries: 1 }, { Strawberries: 0.75 }],
+  [{ Strawberries: 0.75 }, { Strawberries: 0 }],
+  [{ Strawberries: 1 }, { Strawberries: 1 }],
+  [{ Strawberries: 0.5 }, { Strawberries: 0.25 }]
 ];
 
 const FRUIT = {
-  Strawberries: { base: "#a50f26", piece: (r, s) => chunk(r, s, ["#c8102e", "#d92b45", "#a30d25", "#e8455a"], "#f6d36b") },
-  Mango: { base: "#e08a0c", piece: (r, s) => cube(r, s, ["#f5a020", "#f7b23b", "#ee9410", "#fbbf4a"]) }
+  Strawberries: { base: "#a50f26", piece: (r, s) => chunk(r, s, ["#c8102e", "#d92b45", "#a30d25", "#e8455a"], "#f6d36b") }
 };
-const BOWL = { rim: 0.108, foot: 0.05, tall: 0.075, wall: 0.007 };
+const BOWL = { rim: 0.092, foot: 0.066, tall: 0.125, wall: 0.005 }; // a froyo cup: straight sides, taller than it is wide at the foot
 const ring = (cx, cz, y, rad, n = 56) => Array.from({ length: n }, (_, k) => [cx + Math.cos((k / n) * 6.2832) * rad, y, cz + Math.sin((k / n) * 6.2832) * rad]);
 
-// One white bowl on the counter at (cx, cz), with fruit up to `level` of its height.
+// One white cup on the counter at (cx, cz), with fruit up to `level` of its height.
 function bowl(r, name, level, cx, cz, id) {
   const y0 = -CAM_H, top = y0 + BOWL.tall;
-  const radAt = f => BOWL.foot + (BOWL.rim - BOWL.foot) * Math.sqrt(f); // rounded sides
+  const radAt = f => BOWL.foot + (BOWL.rim - BOWL.foot) * f; // straight, slightly tapered sides
   let s = "";
   const [sx, sy, sz] = proj([cx + 0.02, y0, cz - 0.01]);
   s += `<ellipse cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" rx="${((F * BOWL.rim * 1.15) / sz).toFixed(0)}" ry="${((F * BOWL.rim * 0.8) / sz).toFixed(0)}" fill="#000" opacity=".22" filter="url(#soft)"/>`;
@@ -88,7 +88,7 @@ function props() {
 // move: [dx, dy, zoom] of the camera relative to the first photo (pixels, pixels, factor).
 export function scene(levels, seed, move = [0, 0, 1]) {
   const r = rng(seed);
-  const body = counter() + props() + bowl(r, "Strawberries", levels.Strawberries, -0.135, 0.5, `s${seed}`) + bowl(r, "Mango", levels.Mango, 0.135, 0.5, `m${seed}`);
+  const body = counter() + props() + bowl(r, "Strawberries", levels.Strawberries, 0, 0.5, `s${seed}`);
   const pad = (W - H) / 2; // square canvas: QuickLook renders SVGs square (see generate.mjs)
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${W}" viewBox="0 ${-pad} ${W} ${W}">${defs(7)}`;
   svg += `<rect y="${-pad}" width="${W}" height="${W}" fill="#ece9e4"/>`;
@@ -169,7 +169,7 @@ async function score() {
     return `${ok}/${rows.length} exact, ${near}/${rows.length} within one step`;
   };
   console.log(`\n\nModel ${rows[0].model}; second-photo check took ${Math.round(rows.reduce((a, x) => a + x.ms, 0) / rows.length / 100) / 10} s on average\n`);
-  console.log("pair  bowl           truth        first photo   second alone   second compared");
+  console.log("pair  cup            truth        first photo   second alone   second compared");
   for (const x of rows) {
     const cell = (got, want) => `${LABEL[got] ?? "?"}${got === want ? "" : " ✗"}`.padEnd(13);
     console.log(`${String(x.pair).padEnd(5)} ${x.bin.padEnd(14)} ${`${LABEL[x.before]} → ${LABEL[x.after]}`.padEnd(12)} ${cell(x.first, x.before)} ${cell(x.alone, x.after)}  ${cell(x.compared, x.after)}${x.usable ? "" : " (photo flagged unusable)"}`);
