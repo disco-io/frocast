@@ -25,16 +25,18 @@ function when(req) {
   return { scenario, day: isDay(b.day) ? b.day : live.day, min: live.min, today: live.day };
 }
 
-async function dayData(db, scenario, day) {
-  const args = [LOCATION, scenario, day];
+// Demo replays as a pure function of the slider: only what happened up to `upTo` is returned,
+// so dragging back hides later taps and dragging forward shows them again.
+async function dayData(db, scenario, day, upTo = 24 * 60) {
+  const args = [LOCATION, scenario, day, upTo];
   const [b, e, w] = await Promise.all([
-    db.execute({ sql: "SELECT id, ready_min, frac, servings, recommended_frac, leftover_level FROM batches WHERE location_id = ? AND scenario = ? AND day = ? ORDER BY ready_min, created_at", args }),
-    db.execute({ sql: "SELECT at_min FROM batch_events WHERE location_id = ? AND scenario = ? AND day = ? AND type = 'low' ORDER BY at_min", args }),
-    db.execute({ sql: "SELECT id, item_type, item_key, level, amount, unit, source, ref_id FROM waste_log WHERE location_id = ? AND scenario = ? AND day = ?", args })
+    db.execute({ sql: "SELECT id, ready_min, frac, servings, recommended_frac, leftover_level, source FROM batches WHERE location_id = ? AND scenario = ? AND day = ? AND ready_min <= ? ORDER BY ready_min, created_at", args }),
+    db.execute({ sql: "SELECT at_min FROM batch_events WHERE location_id = ? AND scenario = ? AND day = ? AND type = 'low' AND at_min <= ? ORDER BY at_min", args }),
+    db.execute({ sql: "SELECT w.id, w.item_type, w.item_key, w.level, w.amount, w.unit, w.source, w.ref_id FROM waste_log w JOIN batches b ON b.id = w.ref_id WHERE w.location_id = ? AND w.scenario = ? AND w.day = ? AND b.ready_min <= ? AND w.item_type = 'boba'", args })
   ]);
   return {
     batches: b.rows.map(r => ({ id: r.id, readyMin: Number(r.ready_min), frac: Number(r.frac), servings: Number(r.servings),
-      recommendedFrac: r.recommended_frac == null ? null : Number(r.recommended_frac),
+      recommendedFrac: r.recommended_frac == null ? null : Number(r.recommended_frac), source: r.source || "staff",
       leftoverLevel: r.leftover_level == null ? null : Number(r.leftover_level), leftoverLogged: r.leftover_level != null })),
     lows: e.rows.map(r => Number(r.at_min)),
     waste: w.rows.map(r => ({ ...r, level: Number(r.level), amount: Number(r.amount) }))
@@ -49,7 +51,7 @@ export default async function handler(req, res) {
     const t = when(req);
 
     if (req.method === "GET") {
-      return res.status(200).json({ now: { day: t.day, min: t.min, scenario: t.scenario }, ...(await dayData(db, t.scenario, t.day)) });
+      return res.status(200).json({ now: { day: t.day, min: t.min, scenario: t.scenario }, ...(await dayData(db, t.scenario, t.day, t.scenario === "demo" ? t.min : 24 * 60)) });
     }
     if (req.method !== "POST") return sendError(res, 405, "Use GET or POST");
     const { action, frac, recommended, batchId, level, batchSize } = req.body || {};
@@ -58,9 +60,10 @@ export default async function handler(req, res) {
       if (!FRACS.includes(Number(frac))) return sendError(res, 400, "Size must be ¼, ½, ¾ or full");
       const size = Number(batchSize) > 0 && Number(batchSize) <= 500 ? Number(batchSize) : DEFAULT_BATCH;
       const id = crypto.randomUUID();
+      const source = t.scenario === "demo" && req.body.source === "demo-auto" ? "demo-auto" : "staff";
       await db.execute({
-        sql: "INSERT INTO batches (id, location_id, scenario, day, ready_min, frac, servings, recommended_frac, device_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        args: [id, LOCATION, t.scenario, t.day, t.min, Number(frac), Number(frac) * size, FRACS.includes(Number(recommended)) ? Number(recommended) : null, device.id, now()]
+        sql: "INSERT INTO batches (id, location_id, scenario, day, ready_min, frac, servings, recommended_frac, source, device_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        args: [id, LOCATION, t.scenario, t.day, t.min, Number(frac), Number(frac) * size, FRACS.includes(Number(recommended)) ? Number(recommended) : null, source, device.id, now()]
       });
       return res.status(200).json({ id, readyMin: t.min, day: t.day });
     }
@@ -79,8 +82,8 @@ export default async function handler(req, res) {
       const amount = Number(level) * Number(batch.servings);
       await db.batch([
         { sql: "UPDATE batches SET leftover_level = ?, leftover_at = ? WHERE id = ?", args: [Number(level), now(), batch.id] },
-        { sql: "INSERT INTO waste_log (id, location_id, scenario, day, item_type, item_key, level, amount, unit, source, ref_id, device_id, created_at) VALUES (?, ?, ?, ?, 'boba', 'boba', ?, ?, 'drinks', 'staff', ?, ?, ?) ON CONFLICT (id) DO UPDATE SET level = excluded.level, amount = excluded.amount, created_at = excluded.created_at",
-          args: [`boba-${batch.id}`, LOCATION, t.scenario, batch.day, Number(level), amount, batch.id, device.id, now()] }
+        { sql: "INSERT INTO waste_log (id, location_id, scenario, day, item_type, item_key, level, amount, unit, source, ref_id, device_id, created_at) VALUES (?, ?, ?, ?, 'boba', 'boba', ?, ?, 'drinks', ?, ?, ?, ?) ON CONFLICT (id) DO UPDATE SET level = excluded.level, amount = excluded.amount, source = excluded.source, created_at = excluded.created_at",
+          args: [`boba-${batch.id}`, LOCATION, t.scenario, batch.day, Number(level), amount, t.scenario === "demo" && req.body.source === "demo-auto" ? "demo-auto" : "staff", batch.id, device.id, now()] }
       ], "write");
       return res.status(200).json({ batchId: batch.id, level: Number(level), amount });
     }

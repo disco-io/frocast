@@ -27,8 +27,8 @@ function when(src) {
 
 const num = v => (v == null ? null : Number(v));
 
-async function loadBins(db) {
-  const r = await db.execute({ sql: "SELECT id, name, row_no, col_no, discard_at_close, pan_label, pan_cost FROM bins WHERE location_id = ? AND active = 1 ORDER BY row_no, col_no, name", args: [LOCATION] });
+async function loadBins(db, scenario = "live") {
+  const r = await db.execute({ sql: "SELECT id, name, row_no, col_no, discard_at_close, pan_label, pan_cost FROM bins WHERE location_id = ? AND scenario = ? AND active = 1 ORDER BY row_no, col_no, name", args: [LOCATION, scenario] });
   return r.rows.map(b => ({ id: b.id, name: b.name, row_no: Number(b.row_no), col_no: Number(b.col_no),
     discard_at_close: b.discard_at_close == null ? null : Number(b.discard_at_close), pan_label: b.pan_label, pan_cost: num(b.pan_cost) }));
 }
@@ -36,7 +36,7 @@ async function loadBins(db) {
 async function dayData(db, t) {
   const args = [LOCATION, t.scenario, t.day];
   const [bins, checks, levels, refills, waste, devices, photos] = await Promise.all([
-    loadBins(db),
+    loadBins(db, t.scenario),
     db.execute({ sql: "SELECT * FROM topping_checks WHERE location_id = ? AND scenario = ? AND day = ?", args }),
     db.execute({ sql: "SELECT l.* FROM check_levels l JOIN topping_checks c ON c.id = l.check_id WHERE c.location_id = ? AND c.scenario = ? AND c.day = ?", args }),
     db.execute({ sql: "SELECT id, bin_id, amount, at_min, source, device_id FROM refills WHERE location_id = ? AND scenario = ? AND day = ? ORDER BY at_min", args }),
@@ -103,11 +103,11 @@ export default async function handler(req, res) {
       const cost = b.panCost === "" || b.panCost == null || !(Number(b.panCost) >= 0) ? null : Math.round(Number(b.panCost) * 100) / 100;
       const id = b.id ? String(b.id) : crypto.randomUUID();
       await db.execute({
-        sql: `INSERT INTO bins (id, location_id, name, row_no, col_no, discard_at_close, pan_label, pan_cost, active, created_at, updated_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+        sql: `INSERT INTO bins (id, location_id, scenario, name, row_no, col_no, discard_at_close, pan_label, pan_cost, active, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
               ON CONFLICT (id) DO UPDATE SET name = excluded.name, row_no = excluded.row_no, col_no = excluded.col_no,
                 discard_at_close = excluded.discard_at_close, pan_label = excluded.pan_label, pan_cost = excluded.pan_cost, active = 1, updated_at = excluded.updated_at`,
-        args: [id, LOCATION, name, row, col, discard, label, cost, now(), now()]
+        args: [id, LOCATION, t.scenario, name, row, col, discard, label, cost, now(), now()]
       });
       return res.status(200).json({ id });
     }
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
 
     if (body.action === "confirm") {
       if (!["open", "close"].includes(body.kind)) return sendError(res, 400, "kind must be open or close");
-      const bins = await loadBins(db);
+      const bins = await loadBins(db, t.scenario);
       const given = new Map((body.levels || []).map(l => [String(l.binId), l]));
       const missing = bins.filter(b => !given.has(b.id) || !isLevel(given.get(b.id).level));
       if (missing.length) return sendError(res, 400, `Set a level for every bin (missing: ${missing.map(b => b.name).join(", ")})`);

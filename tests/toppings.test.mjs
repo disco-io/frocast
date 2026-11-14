@@ -69,9 +69,9 @@ test("feature flag off hides everything without errors", async () => {
 });
 
 test("only the owner can set up bins", async () => {
-  assert.equal((await post({ action: "saveBin", bin: { name: "Kiwi", row: 1, col: 1 } }, staff)).status, 403);
+  assert.equal((await post({ ...D, action: "saveBin", bin: { name: "Kiwi", row: 1, col: 1 } }, staff)).status, 403);
   for (const [name, row, col, discard] of [["Strawberries", 1, 1, true], ["Mochi", 1, 2, false], ["Mango", 2, 1, null]]) {
-    const r = await post({ action: "saveBin", bin: { name, row, col, discard, panLabel: name === "Mochi" ? "1/6 pan" : null, panCost: name === "Strawberries" ? 12 : null } });
+    const r = await post({ ...D, action: "saveBin", bin: { name, row, col, discard, panLabel: name === "Mochi" ? "1/6 pan" : null, panCost: name === "Strawberries" ? 12 : null } });
     assert.equal(r.status, 200);
     ids[name] = r.data.id;
   }

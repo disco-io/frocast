@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-label="Placeholder: topping bar at opening, six bins">
+  <rect width="960" height="540" fill="#e9e4dc"/>
+  <text x="480" y="40" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="26" font-weight="700" fill="#6b7280">PLACEHOLDER PHOTO · topping bar at open (simulated)</text>
+  <g font-family="Inter, system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2430" text-anchor="middle">
+    <rect x="90" y="80" width="240" height="180" rx="10" fill="#fff" stroke="#bbb" stroke-width="3"/><rect x="100" y="90" width="220" height="160" rx="6" fill="#e2445c"/><text x="210" y="290">Strawberries · full</text>
+    <rect x="360" y="80" width="240" height="180" rx="10" fill="#fff" stroke="#bbb" stroke-width="3"/><rect x="370" y="90" width="220" height="160" rx="6" fill="#f5a623"/><text x="480" y="290">Mango · full</text>
+    <rect x="630" y="80" width="240" height="180" rx="10" fill="#fff" stroke="#bbb" stroke-width="3"/><rect x="640" y="130" width="220" height="120" rx="6" fill="#7bb661"/><text x="750" y="290">Kiwi · ¾</text>
+    <rect x="90" y="320" width="240" height="180" rx="10" fill="#fff" stroke="#bbb" stroke-width="3"/><rect x="100" y="410" width="220" height="80" rx="6" fill="#f7f3ea"/><text x="210" y="530">Mochi · ½</text>
+    <rect x="360" y="320" width="240" height="180" rx="10" fill="#fff" stroke="#bbb" stroke-width="3"/><rect x="370" y="370" width="220" height="120" rx="6" fill="#c779d0"/><text x="480" y="530">Sprinkles · ¾</text>
+    <rect x="630" y="320" width="240" height="180" rx="10" fill="#fff" stroke="#bbb" stroke-width="3"/><rect x="640" y="330" width="220" height="160" rx="6" fill="#ffd166"/><text x="750" y="530">Popping boba · full</text>
+  </g>
+</svg>

@@ -143,3 +143,11 @@ CREATE TABLE IF NOT EXISTS photos (
 );
 CREATE INDEX IF NOT EXISTS photos_age ON photos (location_id, created_at);
 `;
+
+// Columns added after the first release (run once each; "duplicate column" means already done).
+export const MIGRATIONS = [
+  // who/what logged a batch: staff, or the demo's auto-play ('demo-auto')
+  "ALTER TABLE batches ADD COLUMN source TEXT NOT NULL DEFAULT 'staff'",
+  // demo bins live beside the shop's real bins without mixing
+  "ALTER TABLE bins ADD COLUMN scenario TEXT NOT NULL DEFAULT 'live'"
+];
