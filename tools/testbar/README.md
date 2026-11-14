@@ -13,16 +13,19 @@ node tools/testbar/eval.mjs            # scores them through /api/vision -> tool
 - Cost: one Claude call per photo (`claude-haiku-5-5`), a few cents for 30.
 - These are synthetic images. They catch regressions and compare prompt changes; photos of the real bar are the real test.
 
-## Two bowls, before and after
+## One cup, before and after
 
 ```bash
 node tools/testbar/bowls.mjs make      # 6 before/after pairs + off-position shots -> tools/testbar/out-bowls/ (git-ignored)
 node tools/testbar/bowls.mjs score     # needs npm start with the key; add --base http://localhost:PORT if not 8000
 ```
 
-Each pair shows two bowls (strawberries, mango) from the same spot, before and after fruit is taken out. The scorer reads the first photo, confirms its true levels, then reads the second photo twice: on its own, and compared with the first. It prints a table and three totals. It uses the table-demo data (`scenario: "bowls"`) and resets it when done. One run is 18 Claude calls. `01-after-off/far/near/low.jpg` are the same scene from the wrong spot, for trying the line-up lock.
+Each pair shows one cup of strawberries from the same spot, before and after fruit is taken out. The scorer reads the first photo, confirms its true levels, then reads the second photo twice: on its own, and compared with the first. It prints a table and three totals. It uses the table-demo data (`scenario: "bowls"`) and resets it when done. One run is 18 Claude calls. `01-after-off/far/near/low.jpg` are the same scene from the wrong spot, for trying the line-up lock.
 
-Scores on Nov 14 (24 levels per run, drawings only): Opus 5.5 read 23 or 24 right at low and at medium effort (about 2 s per photo at low, 6 s at medium), Sonnet 5.5 read 20, Haiku 5.5 read 17.
+Scores on Nov 14, drawings only:
+
+- **One cup** (one run, Opus 5.5 at low effort): 5 of 6 first photos right, 6 of 6 second photos right when compared with the first, 4 of 6 without it. Every miss was one step too low.
+- **Two bowls** (the earlier version of these drawings, 24 levels per run): Opus 5.5 read 23 or 24 right at low and at medium effort (about 2 s per photo at low, 6 s at medium), Sonnet 5.5 read 20, Haiku 5.5 read 17.
 
 ## Phone camera test (screen → iPhone → score)
 

@@ -49,10 +49,11 @@ export const HOUR_W = [2, 4, 6, 6, 5, 5, 6, 7, 9, 11, 12, 10, 6];
 
 // How temperature changes demand ([°F, multiplier] points, straight lines between them).
 // The forecast uses these as a ratio (the day vs. the recent norm), not as an absolute cold penalty.
-// Froyo drops hard in the cold; tea (many drinks are hot) drops much less. Placeholders.
+// Froyo drops hard in the cold. Tea goes UP in the cold (people want warm boba), and a little
+// in the heat (iced drinks); a mild 70°F day is its ×1.0 point. Placeholders, not shop data.
 export const TEMP = {
   froyo: [[20, 0.4], [30, 0.45], [40, 0.55], [55, 0.75], [70, 1], [85, 1.2], [95, 1.3]],
-  tea:   [[20, 0.7], [30, 0.75], [40, 0.8], [55, 0.9], [70, 1], [85, 1.05], [95, 1.05]]
+  tea:   [[20, 1.2], [30, 1.2], [40, 1.15], [55, 1.08], [70, 1], [85, 1.05], [95, 1.05]]
 };
 export const RAIN = { froyo: 0.75, tea: 0.9 }; // rain or snow
 

@@ -1,9 +1,11 @@
 // Topping-bar vision: photo + the owner's bin list -> fill level per bin, as JSON only.
 // A close photo can come with the day's open photo and its confirmed levels as a yardstick (ref).
 // Model: VISION_MODEL, default claude-opus-5-5 at low effort (VISION_EFFORT: low | medium | high).
-// On drawn before/after bowl photos with a known answer (tools/testbar/bowls.mjs, 24 levels per
-// run) Opus read 23-24 right at low and at medium effort, in about 2 s at low and 6 s at medium;
-// Sonnet read 20 and Haiku 17. Drawings only: re-run the scorer before changing these.
+// On drawn before/after photos of two bowls with a known answer (an earlier version of
+// tools/testbar/bowls.mjs, 24 levels per run) Opus read 23-24 right at low and at medium effort,
+// in about 2 s at low and 6 s at medium; Sonnet read 20 and Haiku 17. On the one-cup drawings it
+// makes now (12 levels per run) Opus at low effort read 11 right in one run.
+// Drawings only: re-run the scorer before changing these.
 // VISION_STUB=<path to JSON> returns a canned answer (tests and offline demo).
 import Anthropic from "@anthropic-ai/sdk";
 import { jsonSchemaOutputFormat } from "@anthropic-ai/sdk/helpers/json-schema";
