@@ -25,7 +25,7 @@ function curve(pts, t) {
 
 // Temperature effect on froyo: 30°F ×0.45 … 70°F ×1.0 … 90°F ×1.25
 export const tempFactor = t => curve(TEMP.froyo, t);
-// Temperature effect on tea: 30°F ×0.75 … 70°F ×1.0 … 90°F ×1.05
+// Temperature effect on tea: 30°F ×1.2 (warm boba) … 70°F ×1.0 … 90°F ×1.05
 export const teaTempFactor = t => curve(TEMP.tea, t);
 
 // Expected customers, froyo and tea counted separately:

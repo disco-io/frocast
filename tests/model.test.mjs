@@ -17,13 +17,21 @@ test("froyo and tea add up to the customer total", () => {
   }
 });
 
-test("cold cuts froyo much harder than tea", () => {
+test("cold cuts froyo and lifts tea (warm boba)", () => {
   const warm = forecast(day("2026-11-21", 70), [], S);
   const cold = forecast(day("2026-11-21", 35), [], S);
-  assert.ok(cold.froyo / warm.froyo < cold.tea / warm.tea);
-  assert.ok(tempFactor(35) < teaTempFactor(35));
+  assert.ok(cold.froyo < warm.froyo, "froyo drops in the cold");
+  assert.ok(cold.tea > warm.tea, "tea goes up in the cold");
+  assert.ok(cold.customers < warm.customers, "the day as a whole is still slower");
+  for (const t of [20, 30, 40, 55, 65]) assert.ok(teaTempFactor(t) > 1, `tea is above 1.0 at ${t}°F`);
+  assert.ok(teaTempFactor(30) > teaTempFactor(55), "colder means a bigger lift");
   assert.equal(tempFactor(70), 1);
   assert.equal(teaTempFactor(70), 1);
+  // Weather counts against the recent norm: colder than the last few weeks lifts tea above 1.0,
+  // a day as cold as the norm is 1.0 (the typical day already includes it).
+  const row = (temp, norm) => forecast({ ...day("2026-11-21", temp), norm }, [], S).factors[1];
+  assert.ok(row(45, 64).mt > 1 && row(45, 64).mf < 1);
+  assert.equal(row(45, 45).mt, 1);
 });
 
 test("a warm typical day splits by the froyo share", () => {

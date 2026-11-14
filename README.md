@@ -82,6 +82,7 @@ Staff can text the shop's number `prep`, `events` or `help` and get the plan bac
 ## Honest notes
 - Sales numbers are **sample estimates** until the shop's real numbers are entered in Settings. The typical-day totals (125 weekday, 185 weekend day) are illustrative figures from franchise benchmarks, not this shop's data, and show an "assumed" badge until the owner sets them.
 - The typical day and the hourly shape describe recent weeks, so weather counts only as warmer or colder than the last 4 weeks, not as an absolute cold penalty.
+- Cold affects the two products in opposite ways: froyo drops, and tea goes up (people want warm boba). A day that is 45°F against a 64°F recent norm is froyo ×0.69 and tea ×1.09. Both curves are our placeholders (`TEMP` in `js/config.js`), not shop data.
 - Some events are read from web pages by AI, so check the dates. The academic calendar source is a third-party page (the Princeton Registrar blocks automated access), so confirm break dates with the Registrar.
 - Savings shown are **estimates**. Food-safety limits come from the shop.
 - Data is shared through Turso when the server is running. On plain static hosting it falls back to this browser only.
