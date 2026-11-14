@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FroCast — prep less, waste less</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍦</text></svg>">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">❄</div>
+      <div><h1>FroCast</h1><small>Froyo &amp; boba prep planner · built with a Nassau St froyo shop</small></div>
+    </div>
+    <div class="sample" id="wxBadge">Loading weather…</div>
+  </header>
+
+  <nav id="tabs">
+    <button data-tab="today" class="on">Today's plan</button>
+    <button data-tab="outlook">2-week outlook</button>
+    <button data-tab="events">Events calendar</button>
+    <button data-tab="log">Closing log</button>
+    <button data-tab="settings">Settings</button>
+  </nav>
+
+  <!-- TODAY -->
+  <section id="today">
+    <div class="days" id="days"></div>
+    <div class="grid">
+      <div style="display:grid; gap:16px">
+        <div class="card">
+          <h2 id="dayTitle">Forecast</h2>
+          <div class="big"><span class="num" id="cust">–</span><span class="lbl">expected customers</span></div>
+          <div class="cmp" id="cmp"></div>
+          <div class="weather" id="wx"></div>
+          <div class="why" id="why"></div>
+          <div class="formula" id="formula"></div>
+        </div>
+        <div class="card">
+          <h2>Customers by hour</h2>
+          <svg class="chart" id="hourly" viewBox="0 0 560 190"></svg>
+          <div class="legend"><span><span class="sw" style="background:var(--pink)"></span>Expected customers</span><span>🧋 Cook boba</span></div>
+        </div>
+      </div>
+      <div class="card" style="align-self:start">
+        <h2>Prep plan</h2>
+        <div class="prep" id="prep"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OUTLOOK -->
+  <section id="outlook" class="hidden">
+    <div class="card" style="margin-bottom:16px">
+      <h2>Expected customers, next 14 days</h2>
+      <svg class="chart" id="outChart" viewBox="0 0 900 230"></svg>
+      <div class="legend"><span><span class="sw" style="background:var(--pink)"></span>Expected customers</span><span><span class="sw" style="background:#cfd8ea"></span>Students away</span></div>
+    </div>
+    <div class="card">
+      <h2>Day by day</h2>
+      <table id="outTable"></table>
+    </div>
+  </section>
+
+  <!-- EVENTS -->
+  <section id="events" class="hidden">
+    <div class="card" style="margin-bottom:16px">
+      <h2>Events that change how busy the shop is</h2>
+      <table id="evTable"></table>
+      <div class="note">Sources: Princeton Registrar (breaks, reading period, exams), Princeton Athletics, town and Palmer Square listings, and student organization calendars. Items marked "sample" are placeholders.</div>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h2>Add an event</h2>
+        <form class="log" id="evForm">
+          <label>What <input type="text" id="eLabel" placeholder="e.g. Women's basketball home game" required></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label>From <input type="date" id="eFrom" required></label>
+            <label>To <input type="date" id="eTo"></label>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label>Type <select id="eType"></select></label>
+            <label>When <select id="eWhen"></select></label>
+          </div>
+          <label>Source <input type="text" id="eSource" value="Added by staff"></label>
+          <button class="btn" type="submit">Add event</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Paste a calendar · AI finds the events</h2>
+        <form class="log" id="aiForm">
+          <label>Paste text from any calendar page (athletics schedule, club events, town newsletter…)
+            <textarea id="aiText" rows="8" placeholder="Sat Nov 21 — Football vs. Penn, 1:00 PM&#10;Fri Nov 20 — Fall a cappella showcase, 8 PM"></textarea></label>
+          <button class="btn" type="submit" id="aiBtn">Find events</button>
+          <div class="toast" id="aiMsg"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section id="log" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>End-of-day log (30 seconds)</h2>
+        <form class="log" id="logForm">
+          <label>Date <input type="date" id="lDate" required></label>
+          <label>Customers today <input type="number" id="lCust" min="0" placeholder="from the register, or a rough count" required></label>
+          <label>Boba thrown out
+            <select id="lBoba"><option value="0">None</option><option value="0.25">A little (≈¼ batch)</option><option value="0.5">Half a batch</option><option value="1">A full batch</option></select></label>
+          <label>Fruit thrown out
+            <select id="lFruit"><option value="0">None</option><option value="0.5">Some</option><option value="1">A lot</option></select></label>
+          <button class="btn" type="submit">Save today</button>
+          <div class="toast" id="toast"></div>
+        </form>
+      </div>
+      <div style="display:grid; gap:16px; align-content:start">
+        <div class="card">
+          <h2 id="wasteTitle">Boba thrown out per day (batches)</h2>
+          <svg class="chart" id="wasteChart" viewBox="0 0 520 200"></svg>
+          <div class="legend"><span><span class="sw" style="background:var(--red)"></span>Before FroCast</span><span><span class="sw" style="background:var(--mint)"></span>With FroCast</span></div>
+        </div>
+        <div class="card">
+          <h2>How accurate is the forecast?</h2>
+          <div id="acc" style="font-size:14px"></div>
+          <div class="row-actions"><button class="btn ghost" id="clearSample" type="button">Hide sample history</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings" class="hidden">
+    <div class="card">
+      <h2>Shop numbers (ask the owner, then the plan updates)</h2>
+      <div class="settings" id="settingsBox"></div>
+      <div class="row-actions"><button class="btn ghost" id="resetAll" type="button">Reset everything to defaults</button></div>
+      <div class="note">Placeholders until the shop confirms them. Food-safety limits (how long boba and cut fruit stay good) are set by the shop, not the app. Data is saved in this browser only.</div>
+    </div>
+  </section>
+
+  <div class="note">Sales numbers are sample estimates until the shop's real numbers are entered. Events marked "sample" are placeholders.</div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
