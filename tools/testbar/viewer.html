@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FroCast · phone camera test</title>
+<style>
+  :root { --ink: #1f2430; --mint: #2f9e7e; --red: #d0453b; --amber: #d98a14; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #000; color: #fff; font-family: Inter, system-ui, sans-serif; overflow: hidden; }
+  #photo { position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: contain; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px; background: rgba(15,18,26,.92); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; transition: opacity .3s; font-size: 15px; }
+  .bar.hide { opacity: 0; pointer-events: none; }
+  button { font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; background: #fff; color: var(--ink); min-height: 44px; }
+  button.ghost { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.4); }
+  .status { flex: 1 1 260px; }
+  .tally { font-weight: 700; }
+  #result { position: fixed; top: 16px; right: 16px; width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto; background: #fff; color: var(--ink); border-radius: 16px; padding: 16px 18px; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  #result h2 { margin: 0 0 8px; font-size: 18px; }
+  #result table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  #result td, #result th { padding: 5px 4px; border-bottom: 1px solid #eee; text-align: left; }
+  .ok { color: var(--mint); font-weight: 800; } .near { color: var(--amber); font-weight: 800; } .bad { color: var(--red); font-weight: 800; }
+  #help { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: flex; align-items: center; justify-content: center; padding: 20px; }
+  #help .card { background: #fff; color: var(--ink); border-radius: 18px; padding: 22px; max-width: 620px; line-height: 1.5; }
+  #help code { background: #f2f0ec; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<img id="photo" alt="Test topping bar photo">
+
+<div id="help">
+  <div class="card">
+    <h2 style="margin-top:0">Test the phone camera against the screen</h2>
+    <ol>
+      <li>On your iPhone (same Wi-Fi as this computer), open<br><code id="phoneUrl"></code></li>
+      <li>Turn this screen's brightness up and dim the room lights to cut reflections.</li>
+      <li>Here, press <b>→</b> for the next photo. On the phone, tap <b>📷 Take photo</b> and fill the frame with the topping bar on this screen.</li>
+      <li>This page scores the photo against its answer key as soon as the phone's check finishes. You don't need to confirm on the phone.</li>
+    </ol>
+    <p>Keys: <b>→ / ←</b> next and previous photo · <b>A</b> show or hide the answers · <b>H</b> hide the bar · <b>R</b> reset the score.</p>
+    <button id="start">Start</button>
+  </div>
+</div>
+
+<div id="result" class="hidden"></div>
+
+<div class="bar" id="bar">
+  <button class="ghost" id="prev">◀</button>
+  <span id="which"></span>
+  <button class="ghost" id="next">▶</button>
+  <span class="status" id="status">Loading…</span>
+  <span class="tally" id="tally"></span>
+  <button class="ghost" id="answers">Answers</button>
+  <button class="ghost" id="reset">Reset score</button>
+</div>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+const DAY = "2026-11-14", TALLY = "frocast-testbar-tally";
+const NAME = { 0: "empty", 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "full" };
+const S = { key: [], i: 0, shownAt: Date.now(), seen: null, bins: {}, showAnswers: false, idle: null };
+let tally = (() => { try { return JSON.parse(localStorage.getItem(TALLY) || "{}"); } catch { return {}; } })();
+const save = () => { try { localStorage.setItem(TALLY, JSON.stringify(tally)); } catch { /* private window */ } };
+const prefill = e => (!e || !e.visible || e.confidence === "low" ? null : e.level);
+
+async function getJson(url) {
+  const r = await fetch(url, { credentials: "same-origin" });
+  if (!r.ok) throw new Error(`${url}: ${r.status}`);
+  return r.json();
+}
+
+function show(i) {
+  S.i = (i + S.key.length) % S.key.length;
+  const k = S.key[S.i];
+  $("photo").src = `out/${k.file}`;
+  $("which").textContent = `Photo ${S.i + 1} of ${S.key.length} · ${k.variant}`;
+  S.shownAt = Date.now();
+  $("status").textContent = "Waiting for a photo from the phone…";
+  $("result").classList.add("hidden");
+  if (S.showAnswers) answers();
+}
+
+function answers() {
+  const k = S.key[S.i];
+  $("result").innerHTML = `<h2>Answer key · photo ${S.i + 1}</h2><table>${Object.entries(k.levels).map(([n, v]) => `<tr><td>${n}</td><td>${NAME[v]}</td></tr>`).join("")}</table>` +
+    (k.variant !== "clean" ? `<p>Bad photo: the check should catch <b>${k.expect.problems.join(", ")}</b>.</p>` : "");
+  $("result").classList.remove("hidden");
+}
+
+function score(run) {
+  const k = S.key[S.i], res = run.result;
+  if (!res.available) {
+    $("status").textContent = `The phone's photo check wasn't available (${res.reason}).`;
+    return;
+  }
+  const est = Object.fromEntries((res.bins || []).map(b => [S.bins[b.id], b]));
+  let html = `<h2>Photo ${S.i + 1} · ${k.variant}</h2>`;
+  const entry = { file: k.file, variant: k.variant, at: run.createdAt };
+  if (k.variant === "clean") {
+    let exact = 0, near = 0, look = 0;
+    const rows = Object.entries(k.levels).map(([n, truth]) => {
+      const e = est[n], p = prefill(e);
+      if (!e) return `<tr><td>${n}</td><td>${NAME[truth]}</td><td colspan="2">no answer</td></tr>`;
+      const d = Math.abs(e.level - truth);
+      if (d === 0) exact++; if (d <= 0.25) near++; if (p === null) look++;
+      const cls = d === 0 ? "ok" : d <= 0.25 ? "near" : "bad";
+      return `<tr><td>${n}</td><td>${NAME[truth]}</td><td class="${cls}">${NAME[e.level]}${p === null ? " (needs a look)" : ""}</td><td>${e.confidence}</td></tr>`;
+    }).join("");
+    const n = Object.keys(k.levels).length;
+    html += `<p><b>${exact} of ${n}</b> exactly right · ${near} within ¼ pan${look ? ` · ${look} left as "needs a look"` : ""}${res.photo_usable ? "" : ` · <span class="bad">called unusable: ${(res.problems || []).join(", ")}</span>`}</p>`;
+    html += `<table><tr><th>Bin</th><th>True</th><th>AI</th><th>Conf.</th></tr>${rows}</table>`;
+    Object.assign(entry, { exact, near, n, usable: res.photo_usable });
+  } else {
+    const flagged = k.expect.problems.filter(p => (res.problems || []).includes(p));
+    const caught = k.variant === "hand" ? flagged.length > 0 && !res.photoId
+      : !res.photo_usable || flagged.length > 0 || (k.expect.hidden.length > 0 && k.expect.hidden.every(n => prefill(est[n]) === null));
+    html += `<p class="${caught ? "ok" : "bad"}">${caught ? "Caught" : "Missed"}: the check said ${res.photo_usable ? "usable" : "unusable"}${(res.problems || []).length ? ` (${res.problems.join(", ")})` : ""}${k.variant === "hand" ? `, photo ${res.photoId ? "stored" : "not stored"}` : ""}.</p>`;
+    Object.assign(entry, { caught });
+  }
+  tally[k.file] = entry;
+  save();
+  $("result").innerHTML = html + `<p><button id="goNext">Next photo →</button></p>`;
+  $("result").classList.remove("hidden");
+  $("goNext").addEventListener("click", () => show(S.i + 1));
+  $("status").textContent = "Scored. Press → for the next photo.";
+  renderTally();
+}
+
+function renderTally() {
+  const all = Object.values(tally);
+  const clean = all.filter(e => e.variant === "clean"), bad = all.filter(e => e.variant !== "clean");
+  const n = clean.reduce((a, e) => a + e.n, 0), ex = clean.reduce((a, e) => a + e.exact, 0), nr = clean.reduce((a, e) => a + e.near, 0);
+  $("tally").textContent = all.length
+    ? `So far: ${clean.length} clean photos, ${n ? Math.round((100 * ex) / n) : 0}% exact, ${n ? Math.round((100 * nr) / n) : 0}% within ¼ · bad photos caught ${bad.filter(e => e.caught).length}/${bad.length}`
+    : "No phone photos scored yet";
+}
+
+async function poll() {
+  try {
+    const { run } = await getJson("/api/vision?latest=1");
+    if (run && run.id !== S.seen && Date.parse(run.createdAt) > S.shownAt) {
+      S.seen = run.id;
+      score(run);
+    } else if (run && S.seen === null) {
+      S.seen = run.id; // ignore results from before this page opened
+    }
+  } catch {
+    $("status").textContent = "Can't reach the FroCast server. Is npm start running?";
+  }
+}
+
+function wake() {
+  $("bar").classList.remove("hide");
+  clearTimeout(S.idle);
+  S.idle = setTimeout(() => $("bar").classList.add("hide"), 3000);
+}
+
+async function start() {
+  const port = location.port ? `:${location.port}` : "";
+  $("phoneUrl").textContent = `http://<this computer's IP>${port}/toppings.html?demo=1&day=${DAY}#close`;
+  S.key = (await getJson("out/key.json")).images;
+  const bins = (await getJson(`/api/toppings?scenario=demo&day=${DAY}`)).bins;
+  S.bins = Object.fromEntries(bins.map(b => [b.id, b.name]));
+  show(0);
+  renderTally();
+  setInterval(poll, 1500);
+  poll();
+}
+
+$("start").addEventListener("click", () => { $("help").classList.add("hidden"); wake(); });
+$("next").addEventListener("click", () => show(S.i + 1));
+$("prev").addEventListener("click", () => show(S.i - 1));
+$("answers").addEventListener("click", () => { S.showAnswers = !S.showAnswers; S.showAnswers ? answers() : $("result").classList.add("hidden"); });
+$("reset").addEventListener("click", () => { tally = {}; save(); renderTally(); });
+document.addEventListener("mousemove", wake);
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") show(S.i + 1);
+  else if (e.key === "ArrowLeft") show(S.i - 1);
+  else if (e.key.toLowerCase() === "a") $("answers").click();
+  else if (e.key.toLowerCase() === "h") { clearTimeout(S.idle); $("bar").classList.toggle("hide"); return; }
+  else if (e.key.toLowerCase() === "r") $("reset").click();
+  else return;
+  wake();
+});
+start().catch(err => { $("status").textContent = `Couldn't load the test photos: ${err.message}. Run node tools/testbar/generate.mjs first.`; });
+</script>
+</body>
+</html>
