@@ -284,6 +284,7 @@ async function start() {
   $("whyClose").addEventListener("click", () => hide("whySheet"));
   $("sizeCancel").addEventListener("click", () => hide("sizeSheet"));
   ["sizeSheet", "whySheet"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Escape") hide(id); }));
+  $("toastClose").addEventListener("click", () => { clearTimeout(S.toastTimer); $("toast").classList.add("hidden"); S.undoId = null; });
   $("toastUndo").addEventListener("click", async () => {
     if (!S.undoId) return;
     await act({ action: "undo", batchId: S.undoId });
