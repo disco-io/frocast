@@ -89,8 +89,6 @@ function renderToday() {
   const chain = key => fc.factors.slice(1).map(x => "× " + (x[key] ?? x.m).toFixed(2)).join(" ");
   const [b0] = fc.factors;
   $("formula").textContent = `Froyo ${Math.round(b0.froyo)} ${chain("mf")} ≈ ${fc.froyo} · Tea ${Math.round(b0.tea)} ${chain("mt")} ≈ ${fc.tea} → ${fc.customers} customers`;
-  $("totalNote").textContent = st.s.baseSet[dow] ? ""
-    : `The typical ${dow} total (${fc.base}) is an illustrative figure from franchise benchmarks, not this shop's data.`;
 
   const bp = bobaPlan(fc, day, st.events, st.s, st.shape);
   const fp = fruitPlan(fc, st.s);
