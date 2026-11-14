@@ -1,5 +1,6 @@
 // Shared helpers for the api/ functions. Files starting with "_" are not routes.
 // Needs ANTHROPIC_API_KEY (in .env locally, or in Vercel's environment variables).
+import { noRank } from "../js/config.js";
 
 export const TYPES = ["break", "exams", "athletics", "town", "student", "competition"];
 export const WHEN = ["all", "afternoon", "evening", "late"];
@@ -170,7 +171,7 @@ export async function read(src, today, windowDays = 45) {
     if (src.hint === "athletics") {                                          // home games only, no AI needed
       const events = items.filter(isHome).map(e => ({
         from: e.from, to: e.to, type: "athletics", when: slot(e.hour, e.from, e.to),
-        label: e.title.replace(/^\[[A-Z]\]\s*/, "").replace(/^Princeton University\s+/, "").replace(/\s+[-–]\s+.*$/, "").slice(0, 80)
+        label: noRank(e.title.replace(/^\[[A-Z]\]\s*/, "").replace(/^Princeton University\s+/, "").replace(/\s+[-–]\s+.*$/, "")).slice(0, 80)
       }));
       return { method: "feed", events };
     }

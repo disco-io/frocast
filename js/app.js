@@ -82,7 +82,7 @@ function renderToday() {
   $("whyLine").textContent = whyLine(day, fc, st.events);
   const cls = m => (m < 0.99 ? "down" : m > 1.01 ? "up" : "flat");
   $("why").innerHTML = fc.factors.map(x => {
-    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)} ${totalBadge(dow)}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
+    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)}${st.s.baseSet[dow] ? "" : " · assumed"}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
     if (x.m === undefined) return `<div class="row"><span>${esc(x.label)}</span><span><span class="x ${cls(x.mf)}">froyo ×${x.mf.toFixed(2)}</span> · <span class="x ${cls(x.mt)}">tea ×${x.mt.toFixed(2)}</span></span></div>`;
     return `<div class="row"><span>${esc(x.label)}</span><span class="x ${cls(x.m)}">×${x.m.toFixed(2)}</span></div>`;
   }).join("");
@@ -114,10 +114,6 @@ function renderToday() {
   drawHourly(hourly(fc.froyo, day, st.events, st.shape), hourly(fc.tea, day, st.events, st.shape), bp.batches);
   renderShape(day, fc);
 }
-
-// Daily totals the owner hasn't set are illustrative placeholders, and say so
-const totalBadge = dow => (st.s.baseSet[dow] ? ""
-  : `<button class="assumed" type="button" data-set="${dow}" title="Illustrative figure from franchise benchmarks, not this shop's data">assumed, tap to set</button>`);
 
 // Where the hourly numbers come from, and the "Why?" for any one hour
 function renderShape(day, fc) {
@@ -497,15 +493,6 @@ function renderSettings() {
 }
 
 function initSettings() {
-  // "assumed, tap to set" badges jump to that day's field in Settings
-  document.addEventListener("click", e => {
-    const b = e.target.closest("[data-set]");
-    if (!b) return;
-    document.querySelector('#tabs [data-tab="settings"]').click();
-    const inp = document.querySelector(`[data-base="${b.dataset.set}"]`);
-    inp?.focus();
-    inp?.select();
-  });
   $("resetAll").addEventListener("click", () => {
     store.clear();
     st.s = structuredClone(DEFAULTS);

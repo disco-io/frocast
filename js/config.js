@@ -97,9 +97,13 @@ export const FIXED_EVENTS = [
 ];
 
 // Put the fixed events first and drop any saved copy of them (older versions saved HackPrinceton as a normal event)
+// Game names without poll rankings: "Men's Ice Hockey vs No. 11/11 Dartmouth" -> "Men's Ice Hockey vs Dartmouth"
+export const noRank = label => String(label ?? "").replace(/(?:\bNo\.|#)\s*\d+(?:\/\d+)?\s+/gi, "");
+
 export const withFixed = list => [
   ...FIXED_EVENTS.map(e => ({ ...e, fixed: true })),
   ...list.filter(e => !e.fixed && !FIXED_EVENTS.some(f => f.id === e.id || (f.from === e.from && f.label.toLowerCase() === e.label.toLowerCase())))
+    .map(e => (e.type === "athletics" ? { ...e, label: noRank(e.label) } : e))   // also cleans games saved before this rule
 ];
 
 // What a screen uses before any events are saved or synced

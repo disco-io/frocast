@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { forecast, bobaDemand } from "../js/model.js";
-import { DEFAULTS, EVENT_STACK } from "../js/config.js";
+import { DEFAULTS, EVENT_STACK, noRank, withFixed } from "../js/config.js";
 import { levelOf, whyLine, plannerBackup, LEVELS } from "../js/busy.js";
 import { planRest, knobs, CLOSE } from "../js/planner.js";
 
@@ -71,4 +71,18 @@ test("busy-day backup: nothing with no cushion, extra boba with a big one, nothi
     if (b.kind === "bigger") assert.ok(b.frac > b.was);
   }
   assert.deepEqual(plannerBackup(hourly, [], [], CLOSE, { ...S, cushion: 0.6 }, []), []);
+});
+
+test("sports event names never show poll rankings", () => {
+  assert.equal(noRank("Men's Ice Hockey vs No. 11/11 Dartmouth"), "Men's Ice Hockey vs Dartmouth");
+  assert.equal(noRank("Women's Basketball vs. No. 5 Harvard"), "Women's Basketball vs. Harvard");
+  assert.equal(noRank("No. 3 Men's Squash vs #12 Yale"), "Men's Squash vs Yale");
+  assert.equal(noRank("Football vs Yale"), "Football vs Yale");
+  const saved = [
+    { id: "a", from: "2026-11-14", to: "2026-11-14", type: "athletics", when: "evening", label: "Men's Ice Hockey vs No. 11/11 Dartmouth" },
+    { id: "b", from: "2026-11-14", to: "2026-11-14", type: "town", when: "all", label: "No. 1 Pie Contest" }
+  ];
+  const shown = withFixed(saved);
+  assert.equal(shown.find(e => e.id === "a").label, "Men's Ice Hockey vs Dartmouth", "games saved earlier are cleaned when loaded");
+  assert.equal(shown.find(e => e.id === "b").label, "No. 1 Pie Contest", "only sports events are touched");
 });
