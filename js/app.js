@@ -1,5 +1,6 @@
 import { DEFAULTS, SETTING_FIELDS, HOURS, TYPES, WHEN, DEFAULT_SOURCES, withFixed, LEGACY_LABELS, LOCATION } from "./config.js";
 import { DOW, MON, iso, dayEvents, isBreak, tempFactor, forecast, hourly, bobaPlan, fruitPlan, machines } from "./model.js";
+import { levelOf, whyLine } from "./busy.js";
 import { getWeather } from "./weather.js";
 import * as store from "./store.js";
 
@@ -24,14 +25,6 @@ const esc = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 const fmtH = h => `${((h + 11) % 12) + 1}:00 ${h < 12 ? "AM" : "PM"}`;
 const fmtM = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 const SIZE = { 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "full" };
-// How busy a day is, compared with the average of the next 14 days (min = lowest share of that average for the level)
-const LEVELS = [
-  { min: 1.25, name: "Very busy", cls: "lv-hot" },
-  { min: 1.05, name: "Busy", cls: "lv-warm" },
-  { min: 0.85, name: "Slightly busy", cls: "lv-ok" },
-  { min: 0.6, name: "Not busy", cls: "lv-cool" },
-  { min: 0, name: "Very slow", cls: "lv-cold" }
-];
 const shortDate = d => `${DOW[d.getDay()]} ${MON[d.getMonth()]} ${d.getDate()}`;
 
 function today() {
@@ -41,7 +34,6 @@ function today() {
 
 // ---------------- Today ----------------
 const avgCust = () => st.days.reduce((a, x) => a + forecast(x, st.events, st.s).customers, 0) / Math.max(st.days.length, 1);
-const levelOf = (customers, avg) => LEVELS.find(l => customers / Math.max(avg, 1) >= l.min);
 const uniq = list => [...new Set(list)];
 
 function renderDays() {
@@ -85,6 +77,7 @@ function renderToday() {
   $("wx").innerHTML = `<span>🌡 <b>${day.temp}°F</b></span><span>☁ <b>${day.cond}</b></span>` +
     dayEvents(st.events, day.key).map(e => `<span>${TYPES[e.type].icon} <b>${esc(e.label)}</b></span>`).join("");
 
+  $("whyLine").textContent = whyLine(day, fc, st.events);
   const cls = m => (m < 0.99 ? "down" : m > 1.01 ? "up" : "flat");
   $("why").innerHTML = fc.factors.map(x => {
     if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;

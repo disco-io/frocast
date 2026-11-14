@@ -53,6 +53,13 @@ export const TYPES = {
   competition: { name: "Club competition",       mult: 1.1,  icon: "💻" }
 };
 
+// How much of each event type's boost counts when several types fall on one day, biggest first:
+// the biggest in full, the second at half, the rest not at all. (Several events of ONE type already count once.)
+export const EVENT_STACK = [1, 0.5, 0];
+
+// Events to name first when several share a day (big draws before small meets)
+export const isMajor = e => /\b(football|basketball|hockey|lacrosse|soccer)\b/i.test(e.label || "");
+
 // When in the day an event brings extra customers
 export const WHEN = {
   all:       { name: "All day",    hours: [] },

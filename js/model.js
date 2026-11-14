@@ -1,4 +1,4 @@
-import { HOURS, HOUR_W, TYPES, WHEN, TEMP, RAIN } from "./config.js";
+import { HOURS, HOUR_W, TYPES, WHEN, TEMP, RAIN, EVENT_STACK, isMajor } from "./config.js";
 
 export const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -44,9 +44,14 @@ export function forecast(day, events, s) {
   ];
   if (day.rain) f.push({ label: "☔ Rain or snow", mf: RAIN.froyo, mt: RAIN.tea });
   const byType = {};        // several events of one type on a day (e.g. 4 home games) make one row
-  evs.filter(e => e.type !== "break").forEach(e => (byType[e.type] ||= []).push(e));
-  Object.entries(byType).forEach(([t, list]) =>
-    f.push({ label: `${TYPES[t].icon} ${list[0].label}${list.length > 1 ? ` + ${list.length - 1} more` : ""} · ${WHEN[list[0].when].name.toLowerCase()}`, m: TYPES[t].mult }));
+  [...evs].sort((a, b) => isMajor(b) - isMajor(a)).filter(e => e.type !== "break").forEach(e => (byType[e.type] ||= []).push(e));
+  // Events of different types don't stack fully (EVENT_STACK): the biggest boost counts in full,
+  // the next at half, the rest not at all. Otherwise a day with 4 small events looks busier than a big game.
+  Object.entries(byType).sort((a, b) => TYPES[b[0]].mult - TYPES[a[0]].mult).forEach(([t, list], i) => {
+    const share = EVENT_STACK[Math.min(i, EVENT_STACK.length - 1)];
+    if (share <= 0) return;
+    f.push({ label: `${TYPES[t].icon} ${list[0].label}${list.length > 1 ? ` + ${list.length - 1} more` : ""} · ${WHEN[list[0].when].name.toLowerCase()}`, m: 1 + (TYPES[t].mult - 1) * share });
+  });
   if (Math.abs(s.calib - 1) > 0.01) f.push({ label: "📝 Adjusted from your closing logs", m: s.calib });
   const mult = key => f.slice(1).reduce((acc, x) => acc * (x[key] ?? x.m), 1);
   const froyoMult = mult("mf"), teaMult = mult("mt");

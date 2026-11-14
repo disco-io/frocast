@@ -99,3 +99,4 @@ a { color: var(--blue); }
 .level.sm { font-size: 12px; padding: 3px 10px; white-space: nowrap; }
 .level.xs { font-size: 10px; padding: 2px 7px; white-space: nowrap; display: inline-block; margin-top: 3px; }
 .day { min-width: 96px; }
+.whyline { font-size: 15px; font-weight: 600; margin: 4px 0 12px; }

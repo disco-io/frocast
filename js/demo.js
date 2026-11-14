@@ -5,7 +5,8 @@
 import { call } from "./api.js";
 import { DEFAULTS, withFixed } from "./config.js";
 import { forecast, bobaDemand, DOW, MON } from "./model.js";
-import { clockState, simulate } from "./planner.js";
+import { clockState, simulate, CLOSE } from "./planner.js";
+import { levelOf, whyLine, plannerBackup } from "./busy.js";
 import { DEMO_DAYS, DEMO_PHOTOS } from "./demo-data.js";
 
 const $ = id => document.getElementById(id);
@@ -54,6 +55,11 @@ async function renderSide() {
 
   $("fcTitle").textContent = `${DOW[d.date.getDay()]}, ${MON[d.date.getMonth()]} ${d.date.getDate()} · ${d.temp}°F, ${d.cond}`;
   $("cust").textContent = fc.customers;
+  const lv = levelOf(fc.customers, fc.base);   // the demo compares with a typical warm day, so cold vs. warm shows
+  $("level").textContent = lv.name;
+  $("level").className = `level ${lv.cls}`;
+  $("level").title = `${Math.round((fc.customers / fc.base) * 100)}% of a typical warm ${DOW[d.date.getDay()]}`;
+  $("whyLine").textContent = whyLine(d, fc, events);
   const drop = Math.round((1 - fc.customers / fc.base) * 100);
   $("cmp").innerHTML = `${drop > 0 ? `<b>${drop}% fewer</b> than` : `${-drop}% more than`} a typical warm ${DOW[d.date.getDay()]} (${fc.base}) · ` +
     `<span class="sw" style="background:var(--pink)"></span>${fc.froyo} froyo · <span class="sw" style="background:var(--blue)"></span>${fc.tea} tea`;
@@ -71,6 +77,10 @@ async function renderSide() {
   const cooked = boba.batches.map(b => `<li><span><b>${SIZE[b.frac]}</b> ready ${hm(b.readyMin)}</span><small>${b.source === "demo-auto" ? "auto" : "tapped"}${b.leftoverLogged ? ` · left ${b.leftoverLevel * 100}%` : ""}</small></li>`);
   const planned = st.plan.filter(p => p.readyMin > S.min).map(p => `<li class="plan"><span><b>${SIZE[p.frac]}</b> start ${hm(p.cookMin)} → ready ${hm(p.readyMin)}</span><small>planned</small></li>`);
   $("plan").innerHTML = [...cooked, ...planned].join("") || "<li class=\"plan\"><span>No boba planned</span></li>";
+  const up = S.s.cushion ?? 0.2;   // busy-day backup: what to add if the rest of the day runs busier than forecast
+  const extra = plannerBackup(hourly, boba.batches, boba.lows, S.min, S.s, st.plan);
+  $("backup").innerHTML = S.min >= CLOSE ? "" : `<b>If it's busier than expected</b> (~${Math.round(fc.customers * (1 + up))} customers, +${Math.round(up * 100)}%): ` +
+    (extra.length ? extra.map(b => (b.kind === "add" ? `add a ${SIZE[b.frac]} batch, start ${hm(b.cookMin)}` : `make the ${hm(b.cookMin)} batch ${SIZE[b.frac]} instead of ${SIZE[b.was]}`)).join("; ") : "no extra boba needed");
   const k = st.k;
   const usualDay = k.habit * k.batch, planDay = st.plannedDay;
   const leftovers = boba.waste.reduce((a, w) => a + w.amount, 0);

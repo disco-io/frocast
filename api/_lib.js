@@ -170,7 +170,7 @@ export async function read(src, today, windowDays = 45) {
     if (src.hint === "athletics") {                                          // home games only, no AI needed
       const events = items.filter(isHome).map(e => ({
         from: e.from, to: e.to, type: "athletics", when: slot(e.hour, e.from, e.to),
-        label: e.title.replace(/^\[[A-Z]\]\s*/, "").replace(/^Princeton University\s+/, "").slice(0, 80)
+        label: e.title.replace(/^\[[A-Z]\]\s*/, "").replace(/^Princeton University\s+/, "").replace(/\s+[-–]\s+.*$/, "").slice(0, 80)
       }));
       return { method: "feed", events };
     }
