@@ -1,4 +1,4 @@
-// Pairing, page gate and shared data, end to end through the local dev server.
+// Pairing, page gate and shared data, end to end through server.js.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { tmpdir } from "node:os";
@@ -11,7 +11,7 @@ process.env.OWNER_PIN = "2468";
 process.env.DEVICE_SECRET = "test-secret";
 delete process.env.VERCEL;
 
-const { createServer } = await import("../scripts/dev.mjs");
+const { createServer } = await import("../server.js");
 const { verify, sign } = await import("../api/_lib/token.js");
 const { safeNext } = await import("../js/api.js");
 
@@ -56,6 +56,8 @@ test("staff pages redirect unpaired visitors to pairing; pair page is open", asy
   assert.match(r.headers.get("location"), /\/pair\.html\?next=%2F$/);
   assert.equal((await fetch(`${base}/pair.html`)).status, 200);
   assert.equal((await fetch(`${base}/api/data`)).status, 401);
+  assert.equal((await fetch(`${base}/local.db`)).status, 404);
+  assert.equal((await fetch(`${base}/node_modules/@libsql/client/package.json`)).status, 404);
 });
 
 test("wrong PIN is rejected; right PIN pairs and opens the dashboard", async () => {
