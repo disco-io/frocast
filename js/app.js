@@ -14,7 +14,7 @@ const st = {
   live: false,
   sel: 0
 };
-const persist = () => store.save({ s: st.s, events: st.events, logs: st.logs, showSample: st.showSample });
+const persist = opts => store.save({ s: st.s, events: st.events, logs: st.logs, showSample: st.showSample }, opts);
 
 const $ = id => document.getElementById(id);
 const esc = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -317,8 +317,8 @@ function initSettings() {
 }
 
 // ---------------- Tabs & startup ----------------
-function changed() {
-  persist();
+function changed(opts) {
+  persist(opts);
   renderToday();
   renderOutlook();
   renderEvents();
@@ -341,17 +341,25 @@ async function start() {
   const [{ days, live }, remote] = await Promise.all([getWeather(today(), LOCATION), store.pull()]);
   st.days = days;
   st.live = live;
-  if (remote) {
-    // Shared data (Turso) wins over this browser's copy, so all paired devices match.
-    if (remote.s) st.s = { ...structuredClone(DEFAULTS), ...remote.s, base: { ...DEFAULTS.base, ...(remote.s.base || {}) } };
-    if (remote.events) st.events = remote.events;
-    if (remote.logs) st.logs = remote.logs;
-    if (remote.showSample !== undefined) st.showSample = remote.showSample;
-  }
+  // Shared data (Turso) wins over this browser's copy, so all paired devices match.
+  if (remote) useShared(remote);
   $("wxBadge").textContent = live ? "Live weather · sample sales numbers" : "Sample weather · sample sales numbers";
   $("wxBadge").classList.toggle("badge-live", live);
   renderSettings();
   changed();
+  // Pick up other devices' changes (every minute, and when this tab comes back into view).
+  store.watch(shared => {
+    useShared(shared);
+    renderSettings();
+    changed({ push: false });
+  });
+}
+
+function useShared(shared) {
+  if (shared.s) st.s = { ...structuredClone(DEFAULTS), ...shared.s, base: { ...DEFAULTS.base, ...(shared.s.base || {}) } };
+  if (shared.events) st.events = shared.events;
+  if (shared.logs) st.logs = shared.logs;
+  if (shared.showSample !== undefined) st.showSample = shared.showSample;
 }
 
 start();
