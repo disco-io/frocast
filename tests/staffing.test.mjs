@@ -6,7 +6,7 @@ import path from "node:path";
 import { rmSync } from "node:fs";
 import { forecast } from "../js/model.js";
 import { DEFAULTS, HOURS } from "../js/config.js";
-import { staffPlan, blocks, clock, span, BUSY, PREP_MIN, CLOSE_MIN } from "../js/staffing.js";
+import { staffPlan, crew, blocks, clock, span, BUSY, PREP_MIN, CLOSE_MIN } from "../js/staffing.js";
 
 const day = (key, temp, rain = false) => {
   const [y, m, d] = key.split("-").map(Number);
@@ -97,4 +97,20 @@ test("npm run staffing prints a plan for each day (offline, empty database)", as
   assert.equal((text.match(/Peak: /g) || []).length, 2);
   assert.match(text, /prep: cut fruit/);
   assert.match(text, /close-out/);
+});
+
+test("workers to schedule: enough shifts for the staff-hours, never fewer than the most at once", () => {
+  const quiet = plan(100), c = crew(quiet, S);
+  assert.equal(c.byHours, Math.ceil(quiet.staffHours / S.shiftHours));
+  assert.equal(c.atOnce, Math.max(...quiet.slots.map(x => x.staff)));
+  assert.equal(c.workers, Math.max(c.atOnce, c.byHours));
+  assert.ok(c.workers >= 2, "one person can't cover prep to close-out in one 8-hour shift");
+  assert.ok(crew(quiet, { ...S, shiftHours: 4 }).workers > c.workers, "shorter shifts need more workers");
+  assert.equal(crew(quiet, { ...S, shiftHours: 24 }).workers, c.atOnce, "a very long shift still can't go below the most at once");
+  assert.equal(crew(quiet, { ...S, shiftHours: undefined }).workers, c.workers, "settings saved before shiftHours existed use 8 h");
+
+  const busy = plan(400), top = crew(busy, S);
+  const first = busy.slots.find(x => x.staff === top.atOnce);
+  assert.deepEqual([top.atOnceFrom, top.atOnceWhat], [first.from, first.what], "names the first slot that needs the most people");
+  assert.ok(top.workers > c.workers, "a busier day needs more workers");
 });

@@ -21,6 +21,7 @@ export const DEFAULTS = {
   cookWorkMin: 15,      // staffing: hands-on minutes to start one boba batch
   minStaff: 1,          // staffing: fewest people on the floor while open
   closeStaff: 2,        // staffing: people for the close-out after the doors shut
+  shiftHours: 8,        // staffing: longest shift one worker takes (hours); sets how many workers a day needs
   calib: 1.0            // learned correction from closing logs
 };
 
@@ -49,7 +50,8 @@ export const SETTING_FIELDS = [
   ["froyoPerHour", "Staffing: froyo customers one person rings up per hour", 1, 1, 200],
   ["cookWorkMin", "Staffing: hands-on minutes to start a boba batch", 1, 0, 60],
   ["minStaff", "Staffing: fewest people working while open", 1, 1, 10],
-  ["closeStaff", "Staffing: people for the close-out", 1, 1, 10]
+  ["closeStaff", "Staffing: people for the close-out", 1, 1, 10],
+  ["shiftHours", "Staffing: longest shift for one worker (hours)", 0.5, 2, 16]
 ];
 
 // Shop hours (10 AM – 11 PM) and our hand-made baseline shape of a day (evening-heavy).

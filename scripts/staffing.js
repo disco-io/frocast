@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 import { forecast, iso, DOW, MON } from "../js/model.js";
 import { LOCATION, TYPES, settings, withFixed } from "../js/config.js";
 import { getWeather } from "../js/weather.js";
-import { staffPlan, span, clock, BUSY } from "../js/staffing.js";
+import { staffPlan, crew, span, clock, BUSY } from "../js/staffing.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -83,6 +83,8 @@ function dayText(d, fc, plan, s, short) {
     L.push(`  ${span(b.from, b.to).padEnd(18)} ${people(b.staff).padEnd(9)}${note}`);
   }
   L.push(`  Peak: ${people(plan.peak.staff)} at ${clock(plan.peak.h * 60)} · ${Math.round(plan.staffHours * 10) / 10} staff-hours`);
+  const c = crew(plan, s);
+  L.push(`  Workers to schedule: ${c.workers} (shifts of up to ${s.shiftHours} h, ${people(c.atOnce)} at once at most)`);
   if (plan.onCall.length) {
     L.push(`  If ${Math.round((s.cushion ?? 0.2) * 100)}% busier: ${plan.onCall.map(b => `+${b.staff} ${span(b.from, b.to)}`).join(", ")}`);
   }
@@ -122,14 +124,15 @@ export async function main(argv = process.argv.slice(2), log = console.log) {
 
   if (o.json) {
     log(JSON.stringify({
-      assumptions: { teaPerHour: s.teaPerHour, froyoPerHour: s.froyoPerHour, cookWorkMin: s.cookWorkMin, minStaff: s.minStaff, closeStaff: s.closeStaff, busy: BUSY },
+      assumptions: { teaPerHour: s.teaPerHour, froyoPerHour: s.froyoPerHour, cookWorkMin: s.cookWorkMin, minStaff: s.minStaff, closeStaff: s.closeStaff, shiftHours: s.shiftHours, busy: BUSY },
       sources: { settings: st.from, weather: wx.live ? "Open-Meteo" : "sample (offline)", shape: shape.source },
       days: out.map(({ d, fc, plan }) => ({
         day: d.key, temp: d.temp, rain: d.rain, customers: fc.customers, froyo: fc.froyo, tea: fc.tea,
         blocks: plan.blocks.map(b => ({ from: clock(b.from), to: clock(b.to), staff: b.staff, what: b.what })),
         hours: plan.hours.map(x => ({ hour: clock(x.h * 60), froyo: +x.froyo.toFixed(1), tea: +x.tea.toFixed(1), cooks: x.cooks, workMin: x.workMin, staff: x.staff, ifBusier: x.busyStaff })),
         peak: { at: clock(plan.peak.h * 60), staff: plan.peak.staff },
-        staffHours: Math.round(plan.staffHours * 10) / 10
+        staffHours: Math.round(plan.staffHours * 10) / 10,
+        workers: crew(plan, s).workers
       }))
     }, null, 2));
     return;
@@ -137,7 +140,7 @@ export async function main(argv = process.argv.slice(2), log = console.log) {
 
   log(`FroCast staffing · ${days.length} day${days.length > 1 ? "s" : ""} from ${dateLabel(start)}`);
   log(`Data: settings and events from ${st.from} · weather ${wx.live ? "Open-Meteo" : "sample (offline)"} · hourly shape ${shape.source === "besttime" ? "BestTime cache" : "baseline curve"}`);
-  const assumed = ["teaPerHour", "froyoPerHour", "cookWorkMin", "minStaff", "closeStaff"].some(k => st.s?.[k] == null);
+  const assumed = ["teaPerHour", "froyoPerHour", "cookWorkMin", "minStaff", "closeStaff", "shiftHours"].some(k => st.s?.[k] == null);
   log(`Rates: ${s.teaPerHour} tea drinks or ${s.froyoPerHour} froyo customers per person-hour, ${s.cookWorkMin} min to start a boba batch, ` +
     `people kept ≤${Math.round(BUSY * 100)}% busy, at least ${people(s.minStaff)} while open${assumed ? " (assumed: set them in Settings)" : ""}`);
   for (const { d, fc, plan } of out) log(`\n${dayText(d, fc, plan, s, o.short)}`);

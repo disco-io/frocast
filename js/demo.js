@@ -1,24 +1,21 @@
-// Demo page: a time slider (8:00 AM – 11:00 PM) drives the counter-tablet clock and the
-// topping check through a simulated day. Hybrid script: the presenter taps the live beats
+// Demo page: a time slider (8:00 AM – 11:00 PM) drives the counter-tablet clock, which fills
+// the screen, through a simulated day. Hybrid script: the presenter taps the live beats
 // ("Batch cooked", "How much was left?"); if a prompt goes unanswered for a while, the demo
 // does it for them (marked auto) so the story keeps moving. Demo rows never touch live data.
 import { call } from "./api.js";
 import { DEFAULTS, withFixed } from "./config.js";
-import { forecast, bobaDemand, DOW, MON } from "./model.js";
-import { clockState, simulate, CLOSE } from "./planner.js";
-import { levelOf, whyLine, plannerBackup } from "./busy.js";
-import { DEMO_DAYS, DEMO_PHOTOS } from "./demo-data.js";
+import { forecast, bobaDemand } from "./model.js";
+import { clockState, simulate } from "./planner.js";
+import { DEMO_DAYS } from "./demo-data.js";
 
 const $ = id => document.getElementById(id);
-const S = { scen: "nov", min: 510, s: structuredClone(DEFAULTS), playing: null, busy: false, tab: null, timer: null, data: null };
+const S = { scen: "nov", min: 510, s: structuredClone(DEFAULTS), playing: null, busy: false, timer: null, data: null };
 const AUTO_COOK_AFTER = 10;  // minutes past a "cook now" prompt before the demo cooks for you
 const AUTO_LEFT_AFTER = 20;  // minutes past expiry before the demo answers "How much was left?"
 const START = 510;           // 8:30 AM
 
 const day = () => DEMO_DAYS[S.scen];
 const hm = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
-const SIZE = { 0.25: "¼", 0.5: "½", 0.75: "¾", 1: "Full" };
-const esc = v => String(v).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 function dayObj() {
   const d = day();
@@ -30,68 +27,19 @@ function tell(frame, extra = {}) {
   $(frame).contentWindow?.postMessage({ type: "frocast-time", min: S.min, day: day().key, ...extra }, location.origin);
 }
 
-function toppingTab() {
-  return S.min >= 21 * 60 + 30 ? "close" : S.min < 11 * 60 ? "open" : "refills";
-}
-
 async function fetchBoba() {
   const r = await call(`/api/boba?${new URLSearchParams({ scenario: "demo", day: day().key, min: S.min })}`);
   return r.ok ? r.data : { batches: [], lows: [], waste: [] };
 }
 
-async function fetchToppings() {
-  const r = await call(`/api/toppings?${new URLSearchParams({ scenario: "demo", day: day().key, min: S.min })}`);
-  return r.ok ? r.data : null;
-}
-
-// ---------- side panel ----------
-async function renderSide() {
+// The day's forecast, boba demand and clock state at the slider's time (what the hybrid script acts on)
+async function readState() {
   const d = dayObj(), events = withFixed(day().events);
   const fc = forecast(d, events, S.s);
   const hourly = bobaDemand(fc, d, events, S.s);
   const boba = await fetchBoba();
   const st = clockState({ hourly, batches: boba.batches, lows: boba.lows, now: S.min, s: S.s });
   S.data = { fc, hourly, boba, st };
-
-  $("fcTitle").textContent = `${DOW[d.date.getDay()]}, ${MON[d.date.getMonth()]} ${d.date.getDate()} · ${d.temp}°F, ${d.cond}`;
-  $("cust").textContent = fc.customers;
-  const lv = levelOf(fc.customers, fc.base);   // the demo compares with a typical warm day, so cold vs. warm shows
-  $("level").textContent = lv.name;
-  $("level").className = `level ${lv.cls}`;
-  $("level").title = `${Math.round((fc.customers / fc.base) * 100)}% of a typical warm ${DOW[d.date.getDay()]}`;
-  $("whyLine").textContent = whyLine(d, fc, events);
-  const drop = Math.round((1 - fc.customers / fc.base) * 100);
-  $("cmp").innerHTML = `${drop > 0 ? `<b>${drop}% fewer</b> than` : `${-drop}% more than`} a typical warm ${DOW[d.date.getDay()]} (${fc.base}) · ` +
-    `<span class="sw" style="background:var(--pink)"></span>${fc.froyo} froyo · <span class="sw" style="background:var(--blue)"></span>${fc.tea} tea`;
-  $("dayNote").textContent = day().note;
-  const cls = m => (m < 0.99 ? "down" : m > 1.01 ? "up" : "flat");
-  $("why").innerHTML = fc.factors.map(x => {
-    if (x.base !== undefined) return `<div class="row"><span>${esc(x.label)}</span><span class="x flat">${x.base} customers (${Math.round(x.froyo)} froyo · ${Math.round(x.tea)} tea)</span></div>`;
-    if (x.m === undefined) return `<div class="row"><span>${esc(x.label)}</span><span><span class="x ${cls(x.mf)}">froyo ×${x.mf.toFixed(2)}</span> · <span class="x ${cls(x.mt)}">tea ×${x.mt.toFixed(2)}</span></span></div>`;
-    return `<div class="row"><span>${esc(x.label)}</span><span class="x ${cls(x.m)}">×${x.m.toFixed(2)}</span></div>`;
-  }).join("");
-  const chain = key => fc.factors.slice(1).map(x => "× " + (x[key] ?? x.m).toFixed(2)).join(" ");
-  $("formula").textContent = `Froyo ${Math.round(fc.factors[0].froyo)} ${chain("mf")} ≈ ${fc.froyo} · Tea ${Math.round(fc.factors[0].tea)} ${chain("mt")} ≈ ${fc.tea}`;
-
-  const lead = st.k.lead;
-  const cooked = boba.batches.map(b => `<li><span><b>${SIZE[b.frac]}</b> ready ${hm(b.readyMin)}</span><small>${b.source === "demo-auto" ? "auto" : "tapped"}${b.leftoverLogged ? ` · left ${b.leftoverLevel * 100}%` : ""}</small></li>`);
-  const planned = st.plan.filter(p => p.readyMin > S.min).map(p => `<li class="plan"><span><b>${SIZE[p.frac]}</b> start ${hm(p.cookMin)} → ready ${hm(p.readyMin)}</span><small>planned</small></li>`);
-  $("plan").innerHTML = [...cooked, ...planned].join("") || "<li class=\"plan\"><span>No boba planned</span></li>";
-  const up = S.s.cushion ?? 0.2;   // busy-day backup: what to add if the rest of the day runs busier than forecast
-  const extra = plannerBackup(hourly, boba.batches, boba.lows, S.min, S.s, st.plan);
-  $("backup").innerHTML = S.min >= CLOSE ? "" : `<b>If it's busier than expected</b> (~${Math.round(fc.customers * (1 + up))} customers, +${Math.round(up * 100)}%): ` +
-    (extra.length ? extra.map(b => (b.kind === "add" ? `add a ${SIZE[b.frac]} batch, start ${hm(b.cookMin)}` : `make the ${hm(b.cookMin)} batch ${SIZE[b.frac]} instead of ${SIZE[b.was]}`)).join("; ") : "no extra boba needed");
-  const k = st.k;
-  const usualDay = k.habit * k.batch, planDay = st.plannedDay;
-  const leftovers = boba.waste.reduce((a, w) => a + w.amount, 0);
-  const tops = await fetchToppings();
-  const topWaste = tops ? tops.waste.reduce((a, w) => a + w.amount, 0) : 0;
-  const week = await call(`/api/toppings?${new URLSearchParams({ scenario: "demo", day: day().key, totals: 1, days: 7 })}`);
-  const wk = week.ok ? week.data : null;
-  $("totals").innerHTML =
-    `<div>Plan for the day: <b>${Math.round(planDay)}</b> drinks of boba vs. your usual <b>${usualDay}</b> (${k.habit} full batches, cook time ${lead} min) <span class="sample">estimate</span></div>` +
-    `<div>Today: boba leftovers <b>${Math.round(leftovers)}</b> drinks · toppings thrown out <b>${topWaste}</b> pans</div>` +
-    (wk ? `<div>Last 7 days of toppings: <b>${wk.pans}</b> pans · <b>$${wk.dollars.toFixed(2)}</b> for bins with a cost${wk.pansNoCost ? ` · ${wk.pansNoCost} pans with no cost set` : ""} <span class="sample">simulated history</span></div>` : "");
 }
 
 // ---------- hybrid script ----------
@@ -100,7 +48,7 @@ async function autoPlay() {
   S.busy = true;
   try {
     for (let i = 0; i < 6; i++) {
-      await renderSide();
+      await readState();
       const { st, boba } = S.data;
       const n = st.next;
       if (st.mode === "now" && n && S.min - n.cookMin >= AUTO_COOK_AFTER) {
@@ -130,17 +78,13 @@ function setMin(m, { quiet = false } = {}) {
   $("slider").value = S.min;
   $("time").textContent = hm(S.min);
   tell("clockFrame");
-  const tab = toppingTab();
-  tell("topFrame", tab !== S.tab ? { tab } : {});
-  S.tab = tab;
   clearTimeout(S.timer);
-  S.timer = setTimeout(quiet ? renderSide : autoPlay, 250);
+  if (!quiet) S.timer = setTimeout(autoPlay, 250);
 }
 
 function setScen(scen) {
   S.scen = scen;
   document.querySelectorAll("[data-scen]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.scen === scen)));
-  S.tab = null;
   setMin(START);
 }
 
@@ -170,12 +114,9 @@ async function reset() {
 function loadFrames() {
   const q = new URLSearchParams({ demo: "1", day: day().key, min: S.min });
   $("clockFrame").src = `clock.html?${q}`;
-  $("topFrame").src = `toppings.html?${q}#open`;
 }
 
 async function start() {
-  $("phOpen").src = DEMO_PHOTOS.open;
-  $("phClose").src = DEMO_PHOTOS.close;
   const shared = await call("/api/data");
   if (shared.status === 401) { location.href = `/pair.html?next=${encodeURIComponent("/demo.html")}`; return; }
   const src = shared.data?.state?.s;
@@ -188,9 +129,7 @@ async function start() {
   $("reset").addEventListener("click", reset);
   loadFrames();
   $("clockFrame").addEventListener("load", () => tell("clockFrame"));
-  $("topFrame").addEventListener("load", () => tell("topFrame", { tab: toppingTab() }));
   setMin(START, { quiet: true });
-  setInterval(renderSide, 5000); // pick up the presenter's taps in the tablet
 }
 
 start();
