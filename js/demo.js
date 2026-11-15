@@ -9,12 +9,12 @@ import { clockState, simulate } from "./planner.js";
 import { DEMO_DAYS } from "./demo-data.js";
 
 const $ = id => document.getElementById(id);
-const S = { scen: "nov", min: 510, s: structuredClone(DEFAULTS), playing: null, busy: false, timer: null, data: null };
+const S = { min: 510, s: structuredClone(DEFAULTS), playing: null, busy: false, timer: null, data: null };
 const AUTO_COOK_AFTER = 10;  // minutes past a "cook now" prompt before the demo cooks for you
 const AUTO_LEFT_AFTER = 20;  // minutes past expiry before the demo answers "How much was left?"
 const START = 510;           // 8:30 AM
 
-const day = () => DEMO_DAYS[S.scen];
+const day = () => DEMO_DAYS.nov;   // the demo shows one day: the cold Saturday
 const hm = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 
 function dayObj() {
@@ -82,12 +82,6 @@ function setMin(m, { quiet = false } = {}) {
   if (!quiet) S.timer = setTimeout(autoPlay, 250);
 }
 
-function setScen(scen) {
-  S.scen = scen;
-  document.querySelectorAll("[data-scen]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.scen === scen)));
-  setMin(START);
-}
-
 function togglePlay() {
   if (S.playing) {
     clearInterval(S.playing);
@@ -108,7 +102,7 @@ async function reset() {
   await call("/api/demo", { method: "POST", body: { action: "reset" } });
   $("reset").disabled = false;
   loadFrames();
-  setScen(S.scen);
+  setMin(START);
 }
 
 function loadFrames() {
@@ -123,7 +117,6 @@ async function start() {
   if (src) S.s = { ...structuredClone(DEFAULTS), ...src, base: { ...DEFAULTS.base, ...(src.base || {}) } };
   const status = await call("/api/demo");
   if (!status.data?.seeded) await call("/api/demo", { method: "POST", body: { action: "reset" } });
-  document.querySelectorAll("[data-scen]").forEach(b => b.addEventListener("click", () => setScen(b.dataset.scen)));
   $("slider").addEventListener("input", e => setMin(Number(e.target.value)));
   $("play").addEventListener("click", togglePlay);
   $("reset").addEventListener("click", reset);
