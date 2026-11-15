@@ -76,6 +76,18 @@ At open and close, staff photograph the topping bar on a phone, or enter each bi
 ## Demo (`demo.html`)
 A time slider (8 AM–11 PM) runs a **simulated** day through the counter-tablet clock and the topping check, without waiting on real time. You can switch between cold **Sat, Nov 14** and warm **Sat, Sep 5** (first weekend of term). Both use the real recorded weather. The presenter taps the tablet like staff would. If a "cook now" prompt goes unanswered for 10 minutes, or a "How much was left?" question for 20, the demo does it and marks the entry auto. Dragging back hides later taps, and dragging forward shows them again. **Reset demo** reseeds two weeks of simulated topping history with six bins. The topping screen's **Use sample photo** runs a clearly marked placeholder photo pair through the prefill. Swap in real shop photos in `js/demo-data.js` (`DEMO_PHOTOS`). Demo rows are tagged `scenario = 'demo'` and never mix with live data.
 
+## Staffing: people needed at each time (`npm run staffing`)
+Prints, for each day, how many people to schedule at each time: shift blocks ("10 AM–7 PM 1 person · 7 PM–10 PM 2 people"), the peak, total staff-hours, who to have on call if the day runs 20% busier, and an hour-by-hour table (froyo, tea, boba batches started, work minutes, people).
+
+```bash
+npm run staffing                        # next 7 days from today
+npm run staffing -- --days 14 --short   # two weeks, shift blocks only
+npm run staffing -- --from 2026-11-20   # start on another day (within the 2-week weather forecast)
+npm run staffing -- --json              # for the prep text or a schedule sheet
+```
+
+Work minutes per hour = tea drinks × 60 / 25 + froyo customers × 60 / 45 + 15 min per boba batch started. People = that ÷ 48 (each person planned at most 80% busy, since customers come in bursts), rounded up, at least 1 while open. Plus 1 person for an hour of prep before open, and 2 for a 45-minute close-out. All five rates are **assumed** placeholders until the shop sets them in Settings. It uses the dashboard's saved settings and events, live weather and the cached hourly shape, and never syncs calendars or calls AI. Logic: `js/staffing.js`.
+
 ## Texting agent (Photon)
 Staff can text the shop's number `prep`, `events` or `help` and get the plan back (iMessage, through Photon). It runs inside `npm start`: when `PHOTON_PROJECT_ID`, `PHOTON_API_KEY`, `PHOTON_AGENT_HANDLE` and `PHOTON_TEST_SENDER` are in `.env`, the terminal prints `Photon agent: on`. Leave them out and it stays off; set `PHOTON_AGENT=0` to switch it off. It answers only the phones listed in `PHOTON_TEST_SENDER`, and only texts sent after it started. It uses the same saved settings and events as the dashboard, plus its own read of the calendar sources. `npm run agent` runs it alone (don't run both).
 

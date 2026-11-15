@@ -54,6 +54,7 @@ index.html          page shell and tabs
 css/styles.css      all styles
 js/config.js        shop settings, event types, default events
 js/model.js         forecast, hourly curve, boba / fruit / machine plans
+js/staffing.js      people needed per hour from the forecast and boba cook starts, prep and close-out slots
 js/shape.js         hourly shape from the cached BestTime forecast (relative busyness → weights), source labels
 js/weather.js       live forecast (Open-Meteo), sample fallback
 js/align.js         photo line-up check: is the camera on the same spot as an earlier photo (shift, distance, move hints)
@@ -65,6 +66,7 @@ api/sync.js         reads every calendar source (feeds + web pages) and returns 
 api/_lib.js         shared helpers: fetch, .ics parser, AI calls (not a route)
 api/shape.js        serves the cached hourly shape to paired devices (reads the cache only, never calls BestTime)
 scripts/besttime.js fetches and caches the BestTime forecast by hand, with the credit log (npm run besttime)
+scripts/staffing.js prints people needed at each time for each day (npm run staffing; --json, --short, --days, --from)
 server.js           local dev server: serves the site and runs api/ (npm start)
 .env.example        template for .env (the real .env is never committed)
 ```
