@@ -91,6 +91,32 @@ test("live close checks get the same comparison", async () => {
   assert.equal((await post({ kind: "close", image: IMG }, "vision")).data.compared, false);
 });
 
+test("the link can ask for two cups; no list goes back to the one cup", async () => {
+  const { cupBins } = await import("../js/demo-data.js");
+  assert.deepEqual(cupBins([" Strawberries ", "Mango", "mango", "", "!!"]).map(b => [b.name, b.col]), [["Strawberries", 1], ["Mango", 2]]);
+  assert.equal(cupBins(["a", "b", "c", "d", "e"]).length, 4, "four cups at most");
+  assert.deepEqual([cupBins().length, cupBins([]).length, cupBins("Mango").length], [1, 1, 1], "anything else is the one cup");
+
+  // asking for two cups sets up both and clears the earlier checks
+  const two = await post({ action: "reset", scenario: "bowls", cups: ["Strawberries", "Mango"] }, "demo");
+  assert.deepEqual([two.status, two.data.bins], [200, 2]);
+  const d = await get(B);
+  assert.deepEqual(d.bins.map(b => [b.id, b.name, b.col_no, b.pan_label]), [[STRAW, "Strawberries", 1, "cup"], ["bowl-mango", "Mango", 2, "cup"]]);
+  assert.deepEqual([d.checks.open, d.checks.close], [null, null]);
+  see({ [STRAW]: 1, "bowl-mango": 0.5 });
+  const est = await post({ ...B, kind: "open", image: IMG }, "vision");
+  assert.deepEqual(est.data.bins.map(b => b.level), [1, 0.5]);
+
+  const one = await post({ action: "reset", scenario: "bowls" }, "demo");
+  assert.equal(one.data.bins, 1);
+  assert.deepEqual((await get(B)).bins.map(b => b.name), ["Strawberries"]);
+  // leave something for the next test to clear
+  see({ [STRAW]: 1 });
+  const first = await post({ ...B, kind: "open", image: IMG }, "vision");
+  await post({ ...B, action: "confirm", kind: "open", levels: [{ binId: STRAW, level: 1, estimate: first.data.bins[0] }], estimator: "vision", photoId: first.data.photoId, photoUsable: true });
+  await post({ ...B, kind: "close", image: IMG }, "vision");
+});
+
 test("start over clears the cup's checks and photos only", async () => {
   const db = await ready();
   const photos = async s => Number((await db.execute({ sql: "SELECT COUNT(*) AS n FROM photos WHERE scenario = ?", args: [s] })).rows[0].n);
