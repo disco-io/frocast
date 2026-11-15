@@ -2,11 +2,13 @@
 //   GET  /api/demo                 -> { seeded, days }
 //   POST /api/demo { action: "reset" }   clear all demo rows, then seed demo bins and two weeks
 //                                        of SIMULATED topping history before each demo day
-//   POST /api/demo { action: "reset", scenario: "bowls" }   table demo: clear its checks and
-//                                        photos and set up the one fruit cup (no history)
+//   POST /api/demo { action: "reset", scenario: "bowls", cups? }   table demo: clear its checks
+//                                        and photos and set up the fruit cups (no history).
+//                                        cups: the fruit in each cup, left to right (default: one
+//                                        cup of strawberries)
 import { ready, LOCATION, now } from "./_lib/db.js";
 import { requireDevice, sendError } from "./_lib/auth.js";
-import { DEMO_DAYS, DEMO_BINS, BOWL_BINS, demoHistory } from "../js/demo-data.js";
+import { DEMO_DAYS, DEMO_BINS, cupBins, demoHistory } from "../js/demo-data.js";
 
 const SIM_DEVICE = "demo-sim";
 
@@ -60,22 +62,24 @@ async function seed(db) {
   return { bins: DEMO_BINS.length, levels: rows };
 }
 
-// Table demo: one cup of strawberries, no history. Only touches rows with scenario 'bowls'.
-async function seedBowls(db) {
+// Table demo: one cup of strawberries (or the cups asked for), no history. Only touches rows
+// with scenario 'bowls'.
+async function seedBowls(db, names) {
+  const cups = cupBins(names);
   const stmts = [
     ...["waste_log", "refills", "photos", "topping_checks", "suggestions"].map(tbl =>
       ({ sql: `DELETE FROM ${tbl} WHERE location_id = ? AND scenario = 'bowls'`, args: [LOCATION] })),
     { sql: "DELETE FROM check_levels WHERE location_id = ? AND check_id LIKE 'bowls:%'", args: [LOCATION] },
     { sql: "DELETE FROM bins WHERE location_id = ? AND scenario = 'bowls'", args: [LOCATION] }
   ];
-  for (const b of BOWL_BINS) {
+  for (const b of cups) {
     stmts.push({
       sql: "INSERT INTO bins (id, location_id, scenario, name, row_no, col_no, discard_at_close, pan_label, pan_cost, active, created_at, updated_at) VALUES (?, ?, 'bowls', ?, ?, ?, ?, ?, ?, 1, ?, ?)",
       args: [`bowl-${b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, LOCATION, b.name, b.row, b.col, b.discard ? 1 : 0, b.panLabel, b.panCost, now(), now()]
     });
   }
   await db.batch(stmts, "write");
-  return { bins: BOWL_BINS.length };
+  return { bins: cups.length };
 }
 
 export default async function handler(req, res) {
@@ -86,7 +90,7 @@ export default async function handler(req, res) {
       const r = await db.execute({ sql: "SELECT COUNT(*) AS n FROM bins WHERE location_id = ? AND scenario = 'demo' AND active = 1", args: [LOCATION] });
       return res.status(200).json({ seeded: Number(r.rows[0].n) > 0, days: DEMO_DAYS });
     }
-    if (req.method === "POST" && req.body?.action === "reset" && req.body.scenario === "bowls") return res.status(200).json({ reset: true, ...(await seedBowls(db)) });
+    if (req.method === "POST" && req.body?.action === "reset" && req.body.scenario === "bowls") return res.status(200).json({ reset: true, ...(await seedBowls(db, req.body.cups)) });
     if (req.method === "POST" && req.body?.action === "reset") return res.status(200).json({ reset: true, ...(await seed(db)) });
     return sendError(res, 400, "Use GET, or POST { action: \"reset\" }");
   } catch (err) {

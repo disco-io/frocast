@@ -2,16 +2,18 @@
 // day, usage per bin, and the "Why?" view. Behind the TOPPING_CAMERA feature flag.
 // Demo: toppings.html?demo=1&day=2026-11-14&min=1380
 // Table demo with one real cup of strawberries: toppings.html?demo=bowls
+// Two or more cups: toppings.html?demo=bowls&cups=Strawberries,Mango (left to right)
 import { applyStatic, langToggle, t } from "./i18n.js";
 import { call } from "./api.js";
 import { LEVELS, prefill, usage, discards } from "./toppings-math.js";
-import { DEMO_PHOTOS, BOWL_BINS } from "./demo-data.js";
+import { DEMO_PHOTOS, cupBins } from "./demo-data.js";
 import { GW, gridH, grid, match, verdict } from "./align.js";
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const demo = params.get("demo") === "1";
-const bowls = params.get("demo") === "bowls"; // one real cup on a table: real photos, no simulated data
+const bowls = params.get("demo") === "bowls"; // real cups of fruit on a table: real photos, no simulated data
+const cupNames = cupBins(params.get("cups")?.split(",")).map(b => b.name); // the table demo's cups, from the link
 const S = {
   tab: "open", data: null, owner: false, enabled: false,
   draft: { open: {}, close: {} }, est: { open: null, close: null }, dismissed: new Set(), negatives: [], newBins: 0
@@ -23,15 +25,19 @@ const D = { day: demo ? params.get("day") : null, min: demo && params.has("min")
 const ctx = () => ({ scenario: demo ? "demo" : bowls ? "bowls" : "live", ...(D.day ? { day: D.day } : {}), ...(D.min !== null ? { min: D.min } : {}) });
 const qs = () => new URLSearchParams(ctx()).toString();
 const lvl = v => t(`top.lvl.${v}`);
-// Wording for the table demo where it differs ("top.x.bowls"), else the usual string.
-const tk = (key, vars) => (bowls && t(`${key}.bowls`) !== `${key}.bowls` ? t(`${key}.bowls`, vars) : t(key, vars));
+// Wording for the table demo where it differs ("top.x.bowls", or "top.x.bowls.many" with two
+// or more cups), else the usual string.
+const tk = (key, vars) => {
+  const own = bowls ? [bins().length > 1 ? `${key}.bowls.many` : "", `${key}.bowls`].find(k => k && t(k) !== k) : null;
+  return t(own || key, vars);
+};
 const FR = { 0.25: "¼", 0.5: "½", 0.75: "¾" };
 function pans(n) {
   if (n == null) return "–";
   const sign = n < 0 ? "−" : "", a = Math.abs(Math.round(n * 4) / 4), whole = Math.floor(a), frac = a - whole;
   return `${sign}${whole || !frac ? whole : ""}${FR[frac] || ""}`;
 }
-const pansText = n => t(`top.${bowls ? "bowl" : "pan"}${n !== 0 && Math.abs(n) <= 1 ? "" : "s"}`, { n: pans(n) }); // table demo: "½ of the cup", "0 cups", "1¼ cups"
+const pansText = n => t(`top.${bowls ? "bowl" : "pan"}${(bowls || n !== 0) && Math.abs(n) <= 1 ? "" : "s"}`, { n: pans(n) }); // "½ pan", "0 pans"; table demo: "½ of the cup", "0 of the cup", "1¼ cups"
 const timeOf = iso => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 const minText = m => `${((Math.floor(m / 60) + 11) % 12) + 1}:${String(m % 60).padStart(2, "0")} ${m < 720 ? "AM" : "PM"}`;
 const bins = () => S.data?.bins || [];
@@ -71,10 +77,10 @@ async function load() {
   ]);
   if (r.status === 401) { location.href = `/pair.html?next=${encodeURIComponent(location.pathname + location.search)}`; return; }
   if (!r.ok) return;
-  // Table demo: set it up when it's empty, or still holds the bins of an older version (two bowls).
-  if (bowls && !S.seeded && r.data.bins.map(b => b.name).join() !== BOWL_BINS.map(b => b.name).join()) {
+  // Table demo: set it up when it's empty, or holds other cups than this link asks for.
+  if (bowls && !S.seeded && r.data.bins.map(b => b.name).join() !== cupNames.join()) {
     S.seeded = true;
-    await call("/api/demo", { method: "POST", body: { action: "reset", scenario: "bowls" } });
+    await call("/api/demo", { method: "POST", body: { action: "reset", scenario: "bowls", cups: cupNames } });
     return load();
   }
   S.data = r.data;
@@ -170,7 +176,7 @@ function showResult(kind, res) {
   }
   if (!res.photo_usable) {
     S.est[kind] = null;
-    const reasons = res.problems.map(p => t(`top.p.${p}`)).join(", ") || t("top.p.view_blocked");
+    const reasons = res.problems.map(p => tk(`top.p.${p}`)).join(", ") || t("top.p.view_blocked");
     return banner("bad", `${esc(t("top.unusable", { reasons }))} ${retake} ${hand}`);
   }
   S.est[kind] = { ...res, byId: Object.fromEntries(res.bins.map(b => [b.id, b])) };
@@ -545,7 +551,7 @@ async function confirmAll() {
 // Table demo: wipe its checks and photos and begin again with the first photo.
 async function startOver() {
   $("startOver").disabled = true;
-  await call("/api/demo", { method: "POST", body: { action: "reset", scenario: "bowls" } });
+  await call("/api/demo", { method: "POST", body: { action: "reset", scenario: "bowls", cups: cupNames } });
   $("startOver").disabled = false;
   Object.assign(S, { tab: "open", draft: { open: {}, close: {} }, est: { open: null, close: null }, negatives: [], pending: null });
   banner("", "");

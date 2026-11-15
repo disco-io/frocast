@@ -44,6 +44,19 @@ export const BOWL_BINS = [
   { name: "Strawberries", row: 1, col: 1, discard: true, panLabel: "cup", panCost: null }
 ];
 
+// The table demo's cups: the fruit named in the link, left to right, up to four
+// (toppings.html?demo=bowls&cups=Strawberries,Mango), or the one cup above.
+export function cupBins(names) {
+  const seen = new Set(), out = [];
+  for (const raw of Array.isArray(names) ? names : []) {
+    const name = String(raw).trim().slice(0, 40), slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    if (!slug || seen.has(slug) || out.length >= 4) continue;
+    seen.add(slug);
+    out.push({ name, row: 1, col: out.length + 1, discard: true, panLabel: "cup", panCost: null });
+  }
+  return out.length ? out : BOWL_BINS;
+}
+
 // What the "sample photo" returns in demo mode (matches the placeholder pair). Kiwi at close
 // is deliberately unsure so the demo shows a "needs a look" bin.
 export const DEMO_ESTIMATES = {
