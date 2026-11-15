@@ -16,6 +16,11 @@ export const DEFAULTS = {
   cushion: 0.2,         // how much busier than forecast the backup plan covers (0.2 = 20% more customers)
   bobaMargin: 0.25,     // batch clock cooks this much extra so the shop doesn't run out
   photoDays: 14,        // days to keep topping-bar photos (the confirmed numbers stay)
+  teaPerHour: 25,       // staffing: tea drinks one person can make in an hour
+  froyoPerHour: 45,     // staffing: froyo customers one person can ring up (and keep the bar stocked) in an hour
+  cookWorkMin: 15,      // staffing: hands-on minutes to start one boba batch
+  minStaff: 1,          // staffing: fewest people on the floor while open
+  closeStaff: 2,        // staffing: people for the close-out after the doors shut
   calib: 1.0            // learned correction from closing logs
 };
 
@@ -39,7 +44,12 @@ export const SETTING_FIELDS = [
   ["cupsPerContainer", "Fruit cups per cut container", 1, 1, 200],
   ["cushion", "Busy-day backup: how much busier to plan for (0.2 = 20% more)", 0.05, 0, 1],
   ["bobaMargin", "Extra boba to cook so you don't run out (0.25 = 25%)", 0.05, 0, 1],
-  ["photoDays", "Days to keep topping-bar photos", 1, 1, 90]
+  ["photoDays", "Days to keep topping-bar photos", 1, 1, 90],
+  ["teaPerHour", "Staffing: tea drinks one person makes per hour", 1, 1, 120],
+  ["froyoPerHour", "Staffing: froyo customers one person rings up per hour", 1, 1, 200],
+  ["cookWorkMin", "Staffing: hands-on minutes to start a boba batch", 1, 0, 60],
+  ["minStaff", "Staffing: fewest people working while open", 1, 1, 10],
+  ["closeStaff", "Staffing: people for the close-out", 1, 1, 10]
 ];
 
 // Shop hours (10 AM – 11 PM) and our hand-made baseline shape of a day (evening-heavy).
