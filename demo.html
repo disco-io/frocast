@@ -11,59 +11,36 @@
 </head>
 <body>
 <div class="wrap dm-wrap">
-  <header>
-    <div class="brand">
-      <div class="logo">❄</div>
-      <div><h1>FroCast demo</h1><small>Fruity Yogurt, 166 Nassau St · <span class="sample">simulated day, real weather</span></small></div>
-    </div>
-    <div class="dm-head">
-      <div class="dm-seg" role="group" aria-label="Day">
-        <button type="button" data-scen="nov" aria-pressed="true">Sat, Nov 14 · cold</button>
-        <button type="button" data-scen="sep" aria-pressed="false">Sat, Sep 5 · warm</button>
+  <div class="dm-stage">
+    <header>
+      <div class="brand">
+        <div class="logo">❄</div>
+        <div><h1>FroCast demo</h1><small>Fruity Yogurt, 166 Nassau St · <span class="sample">simulated day, real weather</span></small></div>
       </div>
-      <button type="button" class="btn ghost" id="reset">⟲ Reset demo</button>
+      <div class="dm-head">
+        <div class="dm-seg" role="group" aria-label="Day">
+          <button type="button" data-scen="nov" aria-pressed="true">Sat, Nov 14 · cold</button>
+          <button type="button" data-scen="sep" aria-pressed="false">Sat, Sep 5 · warm</button>
+        </div>
+        <button type="button" class="btn ghost" id="reset">⟲ Reset demo</button>
+      </div>
+    </header>
+
+    <div class="card dm-controls">
+      <button type="button" class="btn" id="play" aria-pressed="false">▶ Play</button>
+      <label class="dm-slider"><span class="sr">Time of day</span>
+        <input type="range" id="slider" min="480" max="1380" step="5" value="510">
+      </label>
+      <output id="time" class="dm-time" for="slider">8:30 AM</output>
     </div>
-  </header>
 
-  <div class="card dm-controls">
-    <button type="button" class="btn" id="play" aria-pressed="false">▶ Play</button>
-    <label class="dm-slider"><span class="sr">Time of day</span>
-      <input type="range" id="slider" min="480" max="1380" step="5" value="510">
-    </label>
-    <output id="time" class="dm-time" for="slider">8:30 AM</output>
-  </div>
-
-  <div class="dm-grid">
     <section class="dm-tablet" aria-label="Counter tablet">
       <div class="dm-frame"><iframe id="clockFrame" title="Boba clock on the counter tablet (demo)"></iframe></div>
       <div class="dm-caption">Counter tablet · tap the buttons in it like staff would</div>
     </section>
-    <section class="card dm-side">
-      <h2 id="fcTitle">Forecast</h2>
-      <div class="big"><span class="num" id="cust">–</span><span class="lbl">expected customers</span><span class="level" id="level"></span></div>
-      <div class="cmp" id="cmp"></div>
-      <div class="dm-note" id="dayNote"></div>
-      <div class="whyline" id="whyLine"></div>
-      <div class="why" id="why"></div>
-      <div class="formula" id="formula"></div>
-      <h2 class="dm-h2">Boba today</h2>
-      <ul class="dm-plan" id="plan"></ul>
-      <div class="backup" id="backup"></div>
-      <div class="dm-tot" id="totals"></div>
-    </section>
   </div>
 
-  <section class="card dm-top">
-    <h2>Topping bar</h2>
-    <p class="dm-note">Table demo with one real cup of strawberries (real photos, live estimates): <a href="toppings.html?demo=bowls">open the fruit cup check</a> on a phone.</p>
-    <div class="dm-photos">
-      <figure><img id="phOpen" alt="Placeholder photo of the topping bar at open"><figcaption>At open · placeholder</figcaption></figure>
-      <figure><img id="phClose" alt="Placeholder photo of the topping bar at close"><figcaption>At close · placeholder</figcaption></figure>
-    </div>
-    <div class="dm-frame dm-topframe"><iframe id="topFrame" title="Topping bar check (demo)"></iframe></div>
-  </section>
-
-  <div class="note">Everything here is simulated (taps, batches, topping history, sample photo estimates) except the weather, which is each day's real Open-Meteo record. Shop numbers are placeholders until Fruity Yogurt sets them. Demo data never mixes with live data.</div>
+  <div class="note">Everything here is simulated (taps and batches) except the weather, which is each day's real Open-Meteo record. Shop numbers are placeholders until Fruity Yogurt sets them. Demo data never mixes with live data.</div>
 </div>
 <script type="module" src="js/demo.js"></script>
 <script type="module" src="js/agentation.js"></script>
