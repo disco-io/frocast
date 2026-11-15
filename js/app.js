@@ -4,6 +4,7 @@ import { levelOf, whyLine } from "./busy.js";
 import { getWeather } from "./weather.js";
 import * as store from "./store.js";
 import { loadShape, label as shapeLabel } from "./shape.js";
+import { renderStaffing } from "./staff-tab.js";
 
 // ---------------- State ----------------
 // FIXED_EVENTS are always present (first in the list) and can't be deleted: see withFixed in config.js
@@ -479,13 +480,14 @@ function changed(opts) {
   persist(opts);
   renderToday();
   renderOutlook();
+  renderStaffing(st);
   renderEvents();
   renderSources();
   renderLog();
 }
 
 function initTabs() {
-  const ids = ["today", "outlook", "events", "log", "settings"];
+  const ids = ["today", "outlook", "staffing", "events", "log", "settings"];
   document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => {
     document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
     ids.forEach(id => $(id).classList.toggle("hidden", id !== b.dataset.tab));

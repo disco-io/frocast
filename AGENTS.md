@@ -54,7 +54,8 @@ index.html          page shell and tabs
 css/styles.css      all styles
 js/config.js        shop settings, event types, default events
 js/model.js         forecast, hourly curve, boba / fruit / machine plans
-js/staffing.js      people needed per hour from the forecast and boba cook starts, prep and close-out slots
+js/staffing.js      people needed per hour from the forecast and boba cook starts, prep and close-out slots, workers per day
+js/staff-tab.js     draws the dashboard's Staffing tab (workers per day, people per time slot, the selected day's schedule)
 js/shape.js         hourly shape from the cached BestTime forecast (relative busyness → weights), source labels
 js/weather.js       live forecast (Open-Meteo), sample fallback
 js/align.js         photo line-up check: is the camera on the same spot as an earlier photo (shift, distance, move hints)

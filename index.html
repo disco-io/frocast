@@ -25,6 +25,7 @@
   <nav id="tabs">
     <button data-tab="today" class="on">Today's plan</button>
     <button data-tab="outlook">2-week outlook</button>
+    <button data-tab="staffing">Staffing</button>
     <button data-tab="events">Events calendar</button>
     <button data-tab="log">Closing log</button>
     <button data-tab="settings">Settings</button>
@@ -71,6 +72,31 @@
       <h2>Day by day</h2>
       <table id="outTable"></table>
     </div>
+  </section>
+
+  <!-- STAFFING -->
+  <section id="staffing" class="hidden">
+    <div class="card" style="margin-bottom:16px">
+      <h2>Workers needed each day <span class="assumed" id="sfAssumed">assumed rates</span></h2>
+      <div class="sf-scroll"><table id="sfTable" class="sf-table"></table></div>
+      <div class="legend sf-legend"><span>People working at that time:</span><span class="sf-n p1">1</span><span class="sf-n p2">2</span><span class="sf-n p3">3</span><span class="sf-n p4">4</span><span class="sf-n p5">5+</span><span>· Pick a day for its schedule.</span></div>
+    </div>
+    <div class="grid">
+      <div class="card" style="align-self:start">
+        <h2 id="sfDayTitle">Schedule</h2>
+        <div class="big"><span class="num" id="sfWorkers">–</span><span class="lbl" id="sfWorkersLbl">workers to schedule</span></div>
+        <div class="cmp" id="sfSummary"></div>
+        <div class="sf-blocks" id="sfBlocks"></div>
+        <div class="sf-oncall" id="sfOnCall"></div>
+        <div class="why" id="sfWhy"></div>
+      </div>
+      <div class="card" style="align-self:start">
+        <h2>Hour by hour</h2>
+        <div class="sf-scroll"><table id="sfHours"></table></div>
+        <div class="note" id="sfHow"></div>
+      </div>
+    </div>
+    <div class="sf-tip" id="sfTip" aria-hidden="true"><b id="sfTipVal"></b><span id="sfTipWhen"></span><small id="sfTipWhy"></small></div>
   </section>
 
   <!-- EVENTS -->

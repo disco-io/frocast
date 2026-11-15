@@ -4,6 +4,7 @@
 //                           + cookWorkMin for each boba batch started that hour (hands-on time, not the whole cook)
 //   people = max(minStaff, ceil(work minutes / (60 × BUSY)))
 // Plus a prep slot before open (1 person) and a close-out slot after close (closeStaff people).
+// Workers to schedule for the day = max(most people at once, ceil(staff-hours / shiftHours)): see crew().
 // Every rate is a placeholder until the shop sets it in Settings.
 import { HOURS } from "./config.js";
 import { hourly, bobaPlan } from "./model.js";
@@ -68,6 +69,15 @@ export function staffPlan(fc, day, events, s, shape) {
   const onCall = blocks(hours.filter(x => x.busyStaff > x.staff)
     .map(x => ({ from: x.h * 60, to: x.h * 60 + 60, staff: x.busyStaff - x.staff, what: "extra" })));
   return { hours, slots, blocks: blocks(slots), peak: { h: peak.h, staff: peak.staff }, staffHours, onCall, cookStarts: starts };
+}
+
+// Workers to schedule for one day: enough shifts to cover the day's staff-hours when nobody works
+// longer than s.shiftHours, and never fewer than the most people needed at the same time.
+//   { workers, byHours, atOnce, atOnceFrom, atOnceWhat }   (atOnce*: the first slot that needs the most people)
+export function crew(plan, s) {
+  const top = plan.slots.reduce((a, x) => (x.staff > a.staff ? x : a), plan.slots[0]);
+  const byHours = Math.ceil(plan.staffHours / Math.max(1, s.shiftHours || 8) - 1e-9);
+  return { workers: Math.max(top.staff, byHours), byHours, atOnce: top.staff, atOnceFrom: top.from, atOnceWhat: top.what };
 }
 
 // 9:15 AM, 12 PM, 11:45 PM
