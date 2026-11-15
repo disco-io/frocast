@@ -88,7 +88,7 @@ function renderToday() {
   }).join("");
   const chain = key => fc.factors.slice(1).map(x => "× " + (x[key] ?? x.m).toFixed(2)).join(" ");
   const [b0] = fc.factors;
-  $("formula").textContent = `Froyo ${Math.round(b0.froyo)} ${chain("mf")} ≈ ${fc.froyo} · Tea ${Math.round(b0.tea)} ${chain("mt")} ≈ ${fc.tea} → ${fc.customers} customers`;
+  $("formula").textContent = `Froyo ${Math.round(b0.froyo)} ${chain("mf")} ≈ ${fc.froyo} · Tea ${Math.round(b0.tea)} ${chain("mt")} ≈ ${fc.tea} → ${fc.customers} sales`;
 
   const bp = bobaPlan(fc, day, st.events, st.s, st.shape);
   const fp = fruitPlan(fc, st.s);
@@ -120,14 +120,12 @@ function renderShape(day, fc) {
   const dow = DOW[day.date.getDay()];
   const src = shapeLabel(st.shape, dow, HOURS, new Date(), day.date);
   const share = hourly(1, day, st.events, st.shape);
-  const boosted = new Set(dayEvents(st.events, day.key).flatMap(e => WHEN[e.when].hours));
   $("shapeSrc").textContent = src;
   $("hourWhy").textContent = "Tap an hour to see why.";
   document.querySelectorAll("#hourly [data-h]").forEach(r => r.addEventListener("click", () => {
     const i = +r.dataset.h;
     const pct = `${(share[i] * 100).toFixed(1)}% of the day`;
-    $("hourWhy").textContent = `Why ${fmtH(HOURS[i])}? Froyo ${fc.froyo} × ${pct} ≈ ${Math.round(fc.froyo * share[i])} · tea ${fc.tea} × ${pct} ≈ ${Math.round(fc.tea * share[i])}. ` +
-      `${src}${boosted.has(HOURS[i]) ? " This hour is weighted ×1.6 for an event." : ""} Daily total: ${st.s.baseSet[dow] ? "owner-set" : "assumed"}.`;
+    $("hourWhy").textContent = `${fmtH(HOURS[i])}: Froyo ${fc.froyo} × ${pct} ≈ ${Math.round(fc.froyo * share[i])} · Tea ${fc.tea} × ${pct} ≈ ${Math.round(fc.tea * share[i])}`;
   }));
 }
 
