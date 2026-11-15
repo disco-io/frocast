@@ -240,7 +240,7 @@ function renderEvents() {
       <td>${TYPES[e.type].icon} ${TYPES[e.type].name}</td><td>${WHEN[e.when].name}</td>
       <td>${/^https?:/.test(e.url || "") ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.source)}</a>` : esc(e.source)}</td>
       <td>${e.fixed ? "" : `<button class="reset" data-del="${e.i}" title="Remove">✕</button>`}</td></tr>`).join("") ||
-      `<tr><td colspan="6" class="note">No events yet. They load automatically from the calendar sources below, or add one by hand.</td></tr>`);
+      `<tr><td colspan="6" class="note">No events yet. They load automatically from the calendar sources.</td></tr>`);
   document.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => {
     st.events.splice(+b.dataset.del, 1);
     changed();

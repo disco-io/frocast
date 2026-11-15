@@ -40,9 +40,10 @@
           <div class="big"><span class="num" id="cust">–</span><span class="lbl">expected customers</span><span class="level" id="level"></span></div>
           <div class="cmp" id="cmp"></div>
           <div class="weather" id="wx"></div>
-          <div class="whyline" id="whyLine"></div>
+          <!-- Hidden to keep the card quiet. To show the "why" sentence or the math line again, remove class="hidden". -->
+          <div class="whyline hidden" id="whyLine"></div>
           <div class="why" id="why"></div>
-          <div class="formula" id="formula"></div>
+          <div class="formula hidden" id="formula"></div>
         </div>
         <div class="card">
           <h2>Customers by hour</h2>
@@ -77,14 +78,15 @@
     <div class="card" style="margin-bottom:16px">
       <h2>Events that change how busy the shop is</h2>
       <table id="evTable"></table>
-      <div class="note">Events are read from the calendar sources below. Anything you add by hand or paste is kept as is.</div>
+      <div class="note">Events update automatically from Princeton Athletics, Palmer Square, Planet Princeton and the academic calendar.</div>
     </div>
-    <div class="card" style="margin-bottom:16px">
+    <!-- Hidden for now (events still update automatically). To show these two blocks again, remove class="hidden". -->
+    <div class="card hidden" style="margin-bottom:16px">
       <h2>Calendar sources · updated automatically</h2>
       <table id="srcTable"></table>
       <div class="toast" id="syncMsg" style="margin-top:10px"></div>
     </div>
-    <div class="grid">
+    <div class="grid hidden">
       <div class="card">
         <h2>Add an event</h2>
         <form class="log" id="evForm">

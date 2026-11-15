@@ -15,7 +15,7 @@ Cut fruit toppings spoil too.
   - a correction learned from the nightly closing log
 - **Explains every forecast**: each factor shows as a "why" line (e.g. `85 × 0.71 × 1.10 ≈ 66 customers`).
 - **Prep plan**: when to cook boba and how much (small batches timed so pearls run out before they harden), how much fruit to cut, how many froyo machines to run. Each plan also has a busy-day backup ("if it's busier than expected, add a ¼ batch at 7 PM"), and the closing log asks whether you ran out of boba.
-- **Events calendar**: no hardcoded events. A list of calendar sources (Princeton Athletics, Palmer Square, Planet Princeton, an academic calendar page) is read on the server: `.ics` feeds are parsed directly and ordinary web pages are read by AI. Add events by hand, or paste calendar text for the AI to read. The source list lives in `js/config.js`; a source can be removed on the Events tab.
+- **Events calendar**: no hardcoded events. A list of calendar sources (Princeton Athletics, Palmer Square, Planet Princeton, an academic calendar page) is read on the server: `.ics` feeds are parsed directly and ordinary web pages are read by AI. Add events by hand, or paste calendar text for the AI to read. The source list lives in `js/config.js`; a source can be removed on the Events tab. Only events that bring a noticeably bigger crowd are kept: football home games (the only sport), big town festivals and lightings, annual flagship shows, breaks, and the fixed HackPrinceton. Regular club events, other sports and exam periods are left out (see `CROWD` and `relevant` in `api/_lib.js`).
 - **Closing log**: staff enter customers and what got thrown out (30 seconds). The forecast adjusts and the waste chart tracks progress.
 
 ## Run it locally

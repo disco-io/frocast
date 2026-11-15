@@ -1,6 +1,5 @@
 // Shared helpers for the api/ functions. Files starting with "_" are not routes.
 // Needs ANTHROPIC_API_KEY (in .env locally, or in Vercel's environment variables).
-import { noRank } from "../js/config.js";
 
 export const TYPES = ["break", "exams", "athletics", "town", "student", "competition"];
 export const WHEN = ["all", "afternoon", "evening", "late"];
@@ -34,13 +33,17 @@ const RULES = `- "break": students leave campus (recess, vacation). "from" is th
 - "athletics": games and meets. "town": town or Palmer Square events. "student": concerts, shows, club events. "competition": hackathons, tournaments, club competitions.
 - "when" is the part of the day the event brings people out: afternoon (12-5 PM), evening (5-9 PM), late (8-11 PM), or all.`;
 
+// What counts: only events that bring a noticeably bigger crowd of visitors or students to Nassau Street.
+// Regular club events and everyday campus life don't (they happen all the time and don't change a night's prep).
+const CROWD = `Keep ONLY events that would bring a noticeably bigger crowd of visitors or students to Nassau Street: football home games, Reunions, Commencement, Family Weekend, big festivals, holiday markets, tree lightings, parades and other large town or campus-wide events; and breaks (students leave campus). Annual flagship events (like the Princeton Triangle Show) and one-off downtown festivals and markets count. Skip regular club events and meetings, lectures and talks, screenings, open mics, small or free concerts, exhibits, workshops, classes, sales, store promos, restaurant specials, drives, weekly recurring attractions and online events.`;
+
 // Read dated events out of messy page text (any format)
-export async function extract(text, today, hint = "") {
+export async function extract(text, today, hint = "", strict = false) {
   const out = await ask(`Extract events from this calendar text that could change how busy a frozen yogurt and boba shop next to Princeton University's campus will be.
 Today is ${today}. For dates without a year, use the next upcoming occurrence.${hint ? `\nThe page is: ${hint}.` : ""}
 Return JSON only, no other text: {"events":[{"from":"YYYY-MM-DD","to":"YYYY-MM-DD","label":"short name","type":"${TYPES.join("|")}","when":"${WHEN.join("|")}"}]}
 ${RULES}
-- Only include events actually listed in the text. Never invent events.
+${strict ? `- ${CROWD}\n` : ""}- Only include events actually listed in the text. Never invent events.
 
 Text:
 """
@@ -53,7 +56,7 @@ ${String(text).slice(0, 40000)}
 async function pick(items, today, hint) {
   const lines = items.map((e, i) => `${i}|${e.from}${e.to !== e.from ? ".." + e.to : ""}|${e.hour ?? "-"}|${e.title}`).join("\n");
   const out = await ask(`These are items from a public calendar feed${hint ? ` (${hint})` : ""}. Today is ${today}.
-Keep only the ones that could bring crowds or change foot traffic near a frozen yogurt and boba shop on Nassau St next to Princeton University (concerts, performances, markets, festivals, parades, tree lightings, games, student events, breaks). Skip store promos, sales, specials, drives, classes and small private events.
+These are for a frozen yogurt and boba shop on Nassau St next to Princeton University. ${CROWD}
 Format: index|date or date..date|start hour (24h, "-" if unknown)|title
 Return JSON only: {"keep":[{"i":0,"label":"short name","type":"${TYPES.join("|")}","when":"${WHEN.join("|")}"}]}
 ${RULES}
@@ -157,6 +160,17 @@ const VENUES = /Jadwin|Hobey Baker|Princeton Stadium|Powers Field|Roberts Stadiu
 export const isHome = e =>
   /^Princeton, N\.?J/i.test(e.location) || VENUES.test(e.location) || (!e.location.replace(/[,\s]/g, "") && / vs /i.test(e.title) && !/TBA|TBD/i.test(e.title));
 
+// Sports are summarized as football home games: the one sport that fills the town with visitors.
+export const isFootball = e => /\bfootball\b/i.test(e.title);
+
+// What survives from a web feed or page. The academic calendar only matters for breaks (students leave);
+// otherwise breaks, town events and big student events. Hackathons (HackPrinceton is fixed), exam periods and
+// other sports are not kept from feeds.
+export function relevant(events, hint) {
+  const keep = hint === "academic" ? ["break"] : ["break", "town", "student"];
+  return events.filter(e => keep.includes(e.type));
+}
+
 // ---------------- One source -> events ----------------
 const addDays = (key, n) => day(key, n);
 
@@ -168,18 +182,17 @@ export async function read(src, today, windowDays = 45) {
 
   if (isIcs) {
     const items = parseIcs(body).filter(inside);
-    if (src.hint === "athletics") {                                          // home games only, no AI needed
-      const events = items.filter(isHome).map(e => ({
-        from: e.from, to: e.to, type: "athletics", when: slot(e.hour, e.from, e.to),
-        label: noRank(e.title.replace(/^\[[A-Z]\]\s*/, "").replace(/^Princeton University\s+/, "").replace(/\s+[-–]\s+.*$/, "")).slice(0, 80)
+    if (src.hint === "athletics") {                                          // football home games only, no AI needed
+      const events = items.filter(isHome).filter(isFootball).map(e => ({
+        from: e.from, to: e.to, type: "athletics", when: slot(e.hour, e.from, e.to), label: "Football home game"
       }));
       return { method: "feed", events };
     }
     const events = items.length ? await pick(items.slice(0, 150), today, src.name) : [];
-    return { method: "feed + AI", events: clean(events).filter(inside) };
+    return { method: "feed + AI", events: relevant(clean(events), src.hint).filter(inside) };
   }
 
   const text = htmlToText(body);
   if (text.length < 300) throw new Error("No readable text on that page (it may load events with JavaScript). Paste the text below instead.");
-  return { method: "AI", events: (await extract(text, today, src.name)).filter(inside) };
+  return { method: "AI", events: relevant(await extract(text, today, src.name, true), src.hint).filter(inside) };
 }
